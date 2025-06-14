@@ -1,62 +1,424 @@
+// import React, { useEffect, useState, useCallback, useMemo } from 'react';
+// import {
+//   View,
+//   Text,
+//   StyleSheet,
+//   TouchableOpacity,
+//   ActivityIndicator,
+//   ScrollView
+// } from 'react-native';
+// import { useLocalSearchParams, useRouter } from 'expo-router';
+// import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
+// import courseServiceGet from '../../../services/courseServiceGet';
+// import { setQuizzes, selectQuizCache, selectIsCacheValid } from '../../../redux/slices/quizSlice';
+// import ResponsiveSkeleton from '../skeltons/Skelton';
+// import { Ionicons } from '@expo/vector-icons';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+
+// interface Quiz {
+//   _id: string;
+//   title: string;
+//   quizType: string;
+//   duration?: string;
+//   content: string;
+// }
+
+// const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+// const QuizListScreen = () => {
+//   const { quizType } = useLocalSearchParams<{ quizType: string }>();
+//   const { examType } = useLocalSearchParams<{ examType: string }>();
+//   const { subject } = useLocalSearchParams<{ subject: string }>();
+//   const { chapter } = useLocalSearchParams<{ chapter: string }>();
+//   const router = useRouter();
+//   const dispatch = useAppDispatch();
+
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const [quizzes, setQuizzesState] = useState<Quiz[]>([]);
+
+//   const currentRoute = 'quiz-list'; // No need for useMemo for a constant
+
+//   // Get cached quizzes and check validity
+//   const cachedData = useAppSelector((state) =>
+//     selectQuizCache(state, quizType || '', currentRoute)
+//   );
+//   const isCacheValid = useAppSelector((state) =>
+//     selectIsCacheValid(state, quizType || '', CACHE_DURATION, currentRoute)
+//   );
+
+//   const screenTitle = useMemo(() => {
+//     switch (quizType) {
+//       case 'DPP': return 'Daily Practice Problems';
+//       case 'Short Exam': return 'Short Examinations';
+//       case 'Mock Exam': return 'Mock Examinations';
+//       default: return 'Practice Tests';
+//     }
+//   }, [quizType]);
+
+//   const fetchQuizzes = useCallback(async () => {
+//     if (!quizType) return;
+
+//     try {
+//       setLoading(true);
+//       setError('');
+
+//       const response = await courseServiceGet.getDppQuizzes(quizType);
+//       const fetchedQuizzes = response.quizzes || [];
+
+//       setQuizzesState(fetchedQuizzes);
+
+//       // Store in Redux cache
+//       dispatch(setQuizzes({
+//         quizType,
+//         quizzes: fetchedQuizzes.map((quiz: Quiz) => ({
+//           id: quiz._id,
+//           title: quiz.title,
+//           quizType: quiz.quizType,
+//           duration: quiz.duration,
+//           content: quiz.content
+//         })),
+//         route: currentRoute
+//       }));
+//     } catch (err) {
+//       console.error('Error fetching quizzes:', err);
+//       setError('Unable to load quizzes. Please check your connection and try again.');
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [quizType, currentRoute, dispatch]);
+
+//   useEffect(() => {
+//     if (cachedData?.quizzes && isCacheValid) {
+//       // Convert cached data to Quiz format
+//       const cachedQuizzes = cachedData.quizzes.map(quiz => ({
+//         _id: quiz.id,
+//         title: quiz.title,
+//         quizType: quiz.quizType,
+//         duration: quiz.duration,
+//         content: quiz.content
+//       }));
+//       setQuizzesState(cachedQuizzes);
+//     } else {
+//       fetchQuizzes();
+//     }
+//   }, [cachedData, isCacheValid, fetchQuizzes]);
+
+//   const handleTakeQuiz = useCallback((contentId: string) => {
+//     // router.push(`/student/quizzes/take/${contentId}`);
+//   }, [router]);
+
+//   const handleBack = useCallback(() => {
+//     router.back();
+//   }, [router]);
+
+//   const renderQuizCard = useCallback((quiz: Quiz) => (
+//     <TouchableOpacity
+//       key={quiz._id}
+//       style={styles.quizCard}
+//       onPress={() => handleTakeQuiz(quiz.content)}
+//       activeOpacity={0.9}
+//     >
+//       <View style={styles.cardHeader}>
+//         <View style={styles.titleRow}>
+//           <Text style={styles.quizTitle} numberOfLines={2}>{quiz.title}</Text>
+//           {quiz.quizType === 'Mock Exam' && (
+//             <View style={styles.quizTypeBadge}>
+//               <Text style={styles.quizTypeText}>Mock Exam</Text>
+//             </View>
+//           )}
+//         </View>
+//       </View>
+
+//       <View style={styles.detailsContainer}>
+//         {quiz.duration && (
+//           <View style={styles.detailItem}>
+//             <Ionicons name="time-outline" size={16} color="#6b7280" />
+//             <Text style={styles.detailText}>{quiz.duration} min</Text>
+//           </View>
+//         )}
+//       </View>
+
+//       <View style={styles.startButton}>
+//         <Text style={styles.startButtonText}>Start Quiz</Text>
+//         <Ionicons name="arrow-forward" size={16} color="white" />
+//       </View>
+//     </TouchableOpacity>
+//   ), [handleTakeQuiz]);
+
+//   if (loading) {
+//     return (
+//       <View style={styles.container}>
+//         <View style={styles.header}>
+//           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+//             <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+//           </TouchableOpacity>
+//           <Text style={styles.headerTitle}>{screenTitle}</Text>
+//         </View>
+//         <ScrollView style={styles.content}>
+//           <ResponsiveSkeleton />
+//         </ScrollView>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
+//       <View style={styles.container}>
+//         <View style={styles.header}>
+//           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+//             <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+//           </TouchableOpacity>
+//           <Text style={styles.headerTitle}>{screenTitle}</Text>
+//         </View>
+
+//         <ScrollView
+//           style={styles.content}
+//           showsVerticalScrollIndicator={false}
+//           contentContainerStyle={styles.scrollContent}
+//         >
+//           {error ? (
+//             <View style={styles.errorContainer}>
+//               <View style={styles.errorIcon}>
+//                 <Ionicons name="warning" size={24} color="#dc2626" />
+//               </View>
+//               <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+//               <Text style={styles.errorText}>{error}</Text>
+//               <TouchableOpacity
+//                 style={styles.retryButton}
+//                 onPress={fetchQuizzes}
+//               >
+//                 <Text style={styles.retryButtonText}>Try Again</Text>
+//               </TouchableOpacity>
+//             </View>
+//           ) : quizzes.length === 0 ? (
+//             <View style={styles.emptyContainer}>
+//               <Ionicons name="book-outline" size={48} color="#9ca3af" />
+//               <Text style={styles.emptyTitle}>No quizzes available</Text>
+//               <Text style={styles.emptyText}>
+//                 No {quizType?.toLowerCase()} found at the moment.
+//               </Text>
+//             </View>
+//           ) : (
+//             <View style={styles.quizList}>
+//               {quizzes.map(renderQuizCard)}
+//             </View>
+//           )}
+//         </ScrollView>
+//       </View>
+//     </SafeAreaView>
+
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#F3F4F6',
+//   },
+//   header: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: 16,
+//     backgroundColor: 'white',
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#e5e7eb',
+//   },
+//   backButton: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     backgroundColor: '#f3f4f6',
+//     marginRight: 12,
+//     justifyContent: 'center',
+//     alignItems: 'center', // Center icon horizontally
+//   },
+//   headerTitle: {
+//     fontSize: 20,
+//     fontWeight: '600',
+//     color: '#111827',
+//   },
+//   content: {
+//     flex: 1,
+//   },
+//   scrollContent: {
+//     padding: 16,
+//   },
+//   quizList: {
+//     gap: 16,
+//   },
+//   quizCard: {
+//     backgroundColor: 'white',
+//     borderRadius: 12,
+//     padding: 16,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 1 },
+//     shadowOpacity: 0.05,
+//     shadowRadius: 3,
+//     elevation: 1,
+//   },
+//   cardHeader: {
+//     marginBottom: 12,
+//   },
+//   titleRow: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginBottom: 4,
+//   },
+//   quizTitle: {
+//     flex: 1,
+//     fontSize: 16,
+//     fontWeight: '600',
+//     color: '#111827',
+//   },
+//   quizTypeBadge: {
+//     backgroundColor: '#e0f2fe',
+//     borderRadius: 4,
+//     paddingHorizontal: 8,
+//     paddingVertical: 4,
+//     marginLeft: 8,
+//   },
+//   quizTypeText: {
+//     fontSize: 12,
+//     fontWeight: '500',
+//     color: '#0369a1',
+//   },
+//   detailsContainer: {
+//     flexDirection: 'row',
+//     marginBottom: 16,
+//   },
+//   detailItem: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginRight: 16,
+//   },
+//   detailText: {
+//     marginLeft: 4,
+//     fontSize: 14,
+//     color: '#6b7280',
+//   },
+//   startButton: {
+//     backgroundColor: '#4f46e5',
+//     borderRadius: 8,
+//     padding: 12,
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   startButtonText: {
+//     color: 'white',
+//     fontWeight: '600',
+//     marginRight: 8,
+//   },
+//   errorContainer: {
+//     backgroundColor: 'white',
+//     borderRadius: 12,
+//     padding: 24,
+//     alignItems: 'center',
+//     marginTop: 40,
+//   },
+//   errorIcon: {
+//     width: 48,
+//     height: 48,
+//     borderRadius: 24,
+//     backgroundColor: '#fee2e2',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     marginBottom: 16,
+//   },
+//   errorTitle: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: '#1e293b',
+//     marginBottom: 8,
+//   },
+//   errorText: {
+//     fontSize: 15,
+//     color: '#64748b',
+//     textAlign: 'center',
+//     marginBottom: 24,
+//   },
+//   retryButton: {
+//     backgroundColor: '#4f46e5',
+//     borderRadius: 8,
+//     paddingHorizontal: 24,
+//     paddingVertical: 12,
+//   },
+//   retryButtonText: {
+//     color: 'white',
+//     fontWeight: '600',
+//   },
+//   emptyContainer: {
+//     backgroundColor: 'white',
+//     borderRadius: 12,
+//     padding: 24,
+//     alignItems: 'center',
+//     marginTop: 40,
+//   },
+//   emptyTitle: {
+//     fontSize: 18,
+//     fontWeight: '600',
+//     color: '#1e293b',
+//     marginTop: 16,
+//     marginBottom: 8,
+//   },
+//   emptyText: {
+//     fontSize: 15,
+//     color: '#64748b',
+//     textAlign: 'center',
+//   },
+// });
+
+// export default QuizListScreen;
+
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  ScrollView 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
 import courseServiceGet from '../../../services/courseServiceGet';
 import { setQuizzes, selectQuizCache, selectIsCacheValid } from '../../../redux/slices/quizSlice';
+import ResponsiveSkeleton from '../skeltons/Skelton';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Quiz {
   _id: string;
   title: string;
-  subject?: string;
-  chapter?: string;
-  examType?: string;
-  duration?: number;
-  totalQuestions?: number;
-  difficulty?: 'Easy' | 'Medium' | 'Hard';
-  content?: string;
+  quizType: string;
+  duration?: string;
+  content: string;
 }
 
-// Cache duration: 10 minutes
-const CACHE_DURATION = 10 * 60 * 1000;
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 const QuizListScreen = () => {
-  const { quizType, subject, chapter, examType } = useLocalSearchParams<{ 
-    quizType: string;
-    subject?: string;
-    chapter?: string;
-    examType?: string;
-  }>();
-  
+  const { quizType } = useLocalSearchParams<{ quizType: string }>();
+  const { examType } = useLocalSearchParams<{ examType: string }>();
+  const { subject } = useLocalSearchParams<{ subject: string }>();
+  const { chapter } = useLocalSearchParams<{ chapter: string }>();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [quizzes, setQuizzesState] = useState<Quiz[]>([]);
 
-  // Get current route name for cache differentiation
-  const currentRoute = useMemo(() => {
-    // You can get this from router or pass it as a param
-    return 'quiz-list'; // or router.pathname, or a passed parameter
-  }, []);
-
-  // Use the new selector to get cached data
   const cachedQuizzes = useAppSelector((state) => 
-    selectQuizCache(state, quizType || '', subject, chapter, examType, currentRoute)
-  );
+  selectQuizCache(state, quizType || '', subject, chapter, examType)
+);
 
-  // Check if cache is valid
-  const isCacheValid = useAppSelector((state) =>
-    selectIsCacheValid(state, quizType || '', CACHE_DURATION, subject, chapter, examType, currentRoute)
-  );
+const isCacheValid = useAppSelector((state) =>
+  selectIsCacheValid(state, quizType || '', CACHE_DURATION, subject, chapter, examType)
+);
+
+  const quizzes = useMemo(() => cachedQuizzes || [], [cachedQuizzes]);
 
   const screenTitle = useMemo(() => {
     switch (quizType) {
@@ -68,566 +430,313 @@ const QuizListScreen = () => {
   }, [quizType]);
 
   const fetchQuizzes = useCallback(async () => {
-    if (!quizType) return;
+    if (!quizType || loading) return;
 
     try {
       setLoading(true);
       setError('');
-      
-      const response = await courseServiceGet.getDppQuizzes(quizType);
-      const fetchedQuizzes = response.quizzes || [];
-      
-      setQuizzesState(fetchedQuizzes);
-      
-      // Store in Redux with the new structure
+
+      let fetchedQuizzes: Quiz[] = [];
+      if (quizType === 'Mock Exam') {
+        const response = await courseServiceGet.getDppQuizzes(quizType);
+        fetchedQuizzes = response.quizzes || [];
+      } else {
+        if (!subject || !chapter || !examType) {
+          throw new Error('Missing required parameters for this quiz type');
+        }
+        const response = await courseServiceGet.getDppQuizzesByFilter(
+          quizType,
+          subject,
+          chapter,
+          examType
+        );
+        fetchedQuizzes = response.quizzes || [];
+      }
+
       dispatch(setQuizzes({
-        quizType,
-        quizzes: fetchedQuizzes.map((quiz: Quiz) => ({
-          id: quiz._id,
+        quizType: quizType || '',
+        quizzes: fetchedQuizzes.map((quiz) => ({
+          _id: quiz._id,
           title: quiz.title,
-          duration: quiz.duration || 0,
-          subject: quiz.subject,
-          chapter: quiz.chapter,
-          examType: quiz.examType,
-          difficulty: quiz.difficulty,
-          totalQuestions: quiz.totalQuestions
+          quizType: quiz.quizType,
+          duration: quiz.duration,
+          content: quiz.content
         })),
-        subject,
-        chapter,
-        examType,
-        route: currentRoute,
-        timestamp: Date.now()
+        subject: subject || undefined,
+        chapter: chapter || undefined,
+        examType: examType || undefined
       }));
     } catch (err) {
       console.error('Error fetching quizzes:', err);
-      setError('Unable to load quizzes. Please check your connection and try again.');
+      setError(err instanceof Error ? err.message : 'Failed to load quizzes. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [quizType, subject, chapter, examType, currentRoute, dispatch]);
+  }, [quizType, subject, chapter, examType, dispatch, loading]);
 
   useEffect(() => {
-    // Check if we have valid cached data first
-    if (cachedQuizzes?.quizzes && cachedQuizzes.quizzes.length > 0 && isCacheValid) {
-      // Convert cached data back to Quiz format with proper type handling
-      const cachedQuizzesData: Quiz[] = cachedQuizzes.quizzes.map(quiz => ({
-        _id: quiz.id,
-        title: quiz.title,
-        duration: quiz.duration || undefined,
-        subject: quiz.subject || undefined,
-        chapter: quiz.chapter || undefined,
-        examType: quiz.examType || undefined,
-        difficulty: (quiz.difficulty as 'Easy' | 'Medium' | 'Hard') || undefined,
-        totalQuestions: quiz.totalQuestions || undefined,
-        content: undefined // This field is not stored in cache
-      }));
-      setQuizzesState(cachedQuizzesData);
-    } else {
+    if (!isCacheValid && !loading) {
       fetchQuizzes();
     }
-  }, [cachedQuizzes, isCacheValid, fetchQuizzes]);
+  }, [isCacheValid, loading, fetchQuizzes]);
 
-  const handleTakeQuiz = useCallback((quizId: string) => {
-    // router.push(`/student/quizzes/take/${quizId}`);
-    console.log('Taking quiz:', quizId);
-  }, []);
+  const handleTakeQuiz = useCallback((contentId: string) => {
+    // router.push(`/student/quizzes/take/${contentId}`);
+  }, [router]);
 
   const handleBack = useCallback(() => {
     router.back();
   }, [router]);
 
-  const getCacheAge = useCallback(() => {
-    if (!cachedQuizzes?.timestamp) return 'Not cached';
-    
-    const ageMs = Date.now() - cachedQuizzes.timestamp;
-    const ageMinutes = Math.floor(ageMs / (1000 * 60));
-    
-    if (ageMinutes < 1) return 'Just now';
-    if (ageMinutes === 1) return '1 minute ago';
-    return `${ageMinutes} minutes ago`;
-  }, [cachedQuizzes]);
-
-  const renderQuizCard = useCallback((quiz: Quiz, index: number) => (
-    <TouchableOpacity 
-      key={quiz._id} 
-      style={[styles.quizCard, { marginTop: index === 0 ? 0 : 12 }]}
-      onPress={() => handleTakeQuiz(quiz.content || quiz._id)}
-      activeOpacity={0.95}
-    >
-      <View style={styles.cardContent}>
+  const renderQuizCard = useCallback((quiz: Quiz) => (
+    <View key={quiz._id}>
+      <TouchableOpacity
+        style={styles.quizCard}
+        onPress={() => handleTakeQuiz(quiz.content)}
+        activeOpacity={0.9}
+      >
         <View style={styles.cardHeader}>
-          <View style={styles.quizNumber}>
-            <Text style={styles.quizNumberText}>{index + 1}</Text>
-          </View>
-          <View style={styles.titleSection}>
-            <Text style={styles.quizTitle} numberOfLines={2}>
-              {quiz.title}
-            </Text>
-            {quiz.subject && (
-              <Text style={styles.subjectText}>{quiz.subject}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.quizTitle} numberOfLines={2}>{quiz.title}</Text>
+            {quiz.quizType === 'Mock Exam' && (
+              <View style={styles.quizTypeBadge}>
+                <Text style={styles.quizTypeText}>Mock Exam</Text>
+              </View>
             )}
           </View>
         </View>
 
-        <View style={styles.infoGrid}>
-          {quiz.chapter && (
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Chapter</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{quiz.chapter}</Text>
-            </View>
-          )}
-          
-          {quiz.examType && (
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Type</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{quiz.examType}</Text>
+        <View style={styles.detailsContainer}>
+          {quiz.duration && (
+            <View style={styles.detailItem}>
+              <Ionicons name="time-outline" size={16} color="#6b7280" />
+              <Text style={styles.detailText}>{quiz.duration} min</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{quiz.duration || '—'}</Text>
-            <Text style={styles.statLabel}>Minutes</Text>
-          </View>
-          
-          <View style={styles.statDivider} />
-          
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{quiz.totalQuestions || '—'}</Text>
-            <Text style={styles.statLabel}>Questions</Text>
-          </View>
-          
-          {quiz.difficulty && (
-            <>
-              <View style={styles.statDivider} />
-              <View style={styles.statBox}>
-                <Text style={styles.statValue}>{quiz.difficulty}</Text>
-                <Text style={styles.statLabel}>Level</Text>
-              </View>
-            </>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.cardFooter}>
         <View style={styles.startButton}>
-          <Text style={styles.startButtonText}>Start Practice</Text>
-          <Text style={styles.startArrow}>→</Text>
+          <Text style={styles.startButtonText}>Start Quiz</Text>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   ), [handleTakeQuiz]);
 
-  if (loading) {
+  const quizList = useMemo(() => (
+    <View style={styles.quizList}>
+      {quizzes.map(renderQuizCard)}
+    </View>
+  ), [quizzes, renderQuizCard]);
+
+  const errorView = useMemo(() => (
+    <View style={styles.errorContainer}>
+      <View style={styles.errorIcon}>
+        <Ionicons name="warning" size={24} color="#dc2626" />
+      </View>
+      <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={fetchQuizzes}
+      >
+        <Text style={styles.retryButtonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  ), [error, fetchQuizzes]);
+
+  const emptyView = useMemo(() => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="book-outline" size={48} color="#9ca3af" />
+      <Text style={styles.emptyTitle}>No quizzes available</Text>
+      <Text style={styles.emptyText}>
+        No {quizType?.toLowerCase()} found at the moment.
+      </Text>
+    </View>
+  ), [quizType]);
+
+  if (loading && quizzes.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading your practice tests...</Text>
-          <Text style={styles.loadingSubtext}>This may take a few seconds</Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{screenTitle}</Text>
         </View>
+        <ScrollView style={styles.content}>
+          <ResponsiveSkeleton />
+        </ScrollView>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.headerContent}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>{screenTitle}</Text>
-          {subject && <Text style={styles.headerSubtitle}>{subject}</Text>}
-          {chapter && <Text style={styles.headerDetail}>{chapter}</Text>}
         </View>
-      </View>
 
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {error ? (
-          <View style={styles.messageContainer}>
-            <View style={styles.errorIcon}>
-              <Text style={styles.errorIconText}>!</Text>
-            </View>
-            <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity 
-              style={styles.retryButton} 
-              onPress={fetchQuizzes}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        ) : quizzes.length === 0 ? (
-          <View style={styles.messageContainer}>
-            <View style={styles.emptyIcon}>
-              <Text style={styles.emptyIconText}>📚</Text>
-            </View>
-            <Text style={styles.emptyTitle}>No practice tests available</Text>
-            <Text style={styles.emptyText}>
-              No {quizType?.toLowerCase()} found for {subject || 'this selection'}.
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Try exploring other subjects or check back later for new content.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.quizContainer}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Ready to practice?</Text>
-              <Text style={styles.summaryText}>
-                {quizzes.length} practice {quizzes.length === 1 ? 'test' : 'tests'} available
-              </Text>
-              <Text style={styles.cacheInfo}>
-                {quizType} cache • Valid for 10 minutes • Last updated: {getCacheAge()}
-              </Text>
-            </View>
-            
-            <View style={styles.quizList}>
-              {quizzes.map((quiz, index) => renderQuizCard(quiz, index))}
-            </View>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+        <ScrollView
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {error ? errorView : quizzes.length === 0 ? emptyView : quizList}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff'
+  },
+  container: {
+    flex: 1
   },
   header: {
-    backgroundColor: '#ffffff',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb'
   },
   backButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 22,
-    backgroundColor: '#f1f5f9',
-    marginRight: 16,
-    marginTop: 4,
-  },
-  backArrow: {
-    fontSize: 18,
-    color: '#475569',
-    fontWeight: '600',
-  },
-  headerContent: {
-    flex: 1,
-    paddingTop: 4,
+    marginRight: 16
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#3b82f6',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  headerDetail: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  loadingContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#1e293b',
-    textAlign: 'center',
-  },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
+    color: '#1f2937'
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   scrollContent: {
-    padding: 20,
-  },
-  messageContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    marginTop: 40,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  errorIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#fee2e2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  errorIconText: {
-    fontSize: 28,
-    color: '#dc2626',
-    fontWeight: 'bold',
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  emptyIcon: {
-    marginBottom: 16,
-  },
-  emptyIconText: {
-    fontSize: 48,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  retryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  quizContainer: {
-    flex: 1,
-  },
-  summaryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  summaryText: {
-    fontSize: 16,
-    color: '#3b82f6',
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  cacheInfo: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  quizList: {
-    gap: 0,
+    paddingBottom: 16
   },
   quizCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 8,
+    padding: 16,
     marginBottom: 12,
-    elevation: 4,
+    marginHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    padding: 20,
+    shadowRadius: 3,
+    elevation: 2
   },
   cardHeader: {
     flexDirection: 'row',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 8
   },
-  quizNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#e0f2fe',
-    justifyContent: 'center',
+  titleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  quizNumberText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0369a1',
-  },
-  titleSection: {
-    flex: 1,
+    flex: 1
   },
   quizTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    lineHeight: 22,
-    marginBottom: 4,
-  },
-  subjectText: {
-    fontSize: 14,
-    color: '#3b82f6',
     fontWeight: '500',
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 16,
-  },
-  infoItem: {
     flex: 1,
+    color: '#1f2937'
   },
-  infoLabel: {
+  quizTypeBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginLeft: 8
+  },
+  quizTypeText: {
+    color: '#000000',
     fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '500'
   },
-  infoValue: {
-    fontSize: 14,
-    color: '#1e293b',
-    fontWeight: '500',
+  detailsContainer: {
+    marginBottom: 12
   },
-  statsContainer: {
+  detailItem: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+    alignItems: 'center'
   },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#e2e8f0',
-    marginHorizontal: 8,
-  },
-  cardFooter: {
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  detailText: {
+    marginLeft: 4,
+    color: '#6b7280',
+    fontSize: 14
   },
   startButton: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
-    paddingVertical: 14,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    justifyContent: 'center',
+    backgroundColor: '#4F46E5',
+    padding: 12,
+    borderRadius: 8
   },
   startButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
+    fontWeight: '500',
+    marginRight: 8
   },
-  startArrow: {
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24
+  },
+  errorIcon: {
+    marginBottom: 16
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#dc2626',
+    marginBottom: 8
+  },
+  errorText: {
+    color: '#6b7280',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16
+  },
+  retryButton: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8
+  },
+  retryButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500'
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginTop: 16
+  },
+  emptyText: {
+    color: '#6b7280',
+    fontSize: 16,
+    marginTop: 8
+  },
+  quizList: {
+    paddingVertical: 16
+  }
 });
 
 export default QuizListScreen;

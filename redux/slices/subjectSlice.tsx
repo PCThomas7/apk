@@ -1,330 +1,287 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface Subject {
+  id: string;
+  name: string;
+}
+
+interface ExamTypeSubjects {
+  examType: string;
+  subjects: Subject[];
+}
+
 interface SubjectCacheEntry {
-  groupedSubjects: Record<string, string[]>; // { NEET: [...], JEE: [...] }
+  examSubjects: ExamTypeSubjects[];
   timestamp: number;
-  route?: string; // Track which screen cached this
+  route?: string;
   filters?: {
     courseId?: string;
     category?: string;
-    // Add other relevant filters
   };
 }
 
+interface QuizTypeCache {
+  [key: string]: SubjectCacheEntry;
+}
+
 interface SubjectState {
-  // Separate cache for different quiz types
-  dppSubjects: Record<string, SubjectCacheEntry>; // key = cacheKey (route_filters)
-  shortExamSubjects: Record<string, SubjectCacheEntry>;
-  
-  // LRU tracking for cache management
-  lruQueue: {
+  caches: {
+    dpp: QuizTypeCache;
+    shortExam: QuizTypeCache;
+  };
+  lruQueues: {
     dpp: string[];
     shortExam: string[];
   };
-  
   maxCacheSize: number;
 }
 
 const initialState: SubjectState = {
-  dppSubjects: {},
-  shortExamSubjects: {},
-  lruQueue: {
+  caches: {
+    dpp: {},
+    shortExam: {},
+  },
+  lruQueues: {
     dpp: [],
     shortExam: [],
   },
-  maxCacheSize: 20, // Reasonable limit for subjects
+  maxCacheSize: 15,
 };
 
-// Helper function to generate cache keys
-const generateSubjectCacheKey = (
+const normalizeQuizType = (quizType: string): keyof SubjectState['caches'] => {
+  const type = quizType.toLowerCase();
+  if (type.includes('dpp') || type.includes('daily')) return 'dpp';
+  if (type.includes('short')) return 'shortExam';
+  throw new Error(`Unsupported quiz type for subjects: ${quizType}`);
+};
+
+const generateCacheKey = (
   route?: string,
   courseId?: string,
   category?: string
 ): string => {
-  const parts = [
-    route || 'default',
-    courseId || 'all',
-    category || 'all'
-  ];
-  return parts.join('_');
-};
-
-// Helper function to get the correct cache store
-const getSubjectCacheStore = (state: SubjectState, quizType: string) => {
-  const normalizedType = quizType.toLowerCase().replace(/\s+/g, '');
-  
-  switch (normalizedType) {
-    case 'dpp':
-    case 'dailypracticeproblem':
-      return {
-        cache: state.dppSubjects,
-        lru: state.lruQueue.dpp,
-        setCacheEntry: (key: string, entry: SubjectCacheEntry) => {
-          state.dppSubjects[key] = entry;
-        },
-        deleteCacheEntry: (key: string) => {
-          delete state.dppSubjects[key];
-        },
-        updateLru: (newQueue: string[]) => {
-          state.lruQueue.dpp = newQueue;
-        }
-      };
-    
-    case 'shortexam':
-    case 'shortexamination':
-      return {
-        cache: state.shortExamSubjects,
-        lru: state.lruQueue.shortExam,
-        setCacheEntry: (key: string, entry: SubjectCacheEntry) => {
-          state.shortExamSubjects[key] = entry;
-        },
-        deleteCacheEntry: (key: string) => {
-          delete state.shortExamSubjects[key];
-        },
-        updateLru: (newQueue: string[]) => {
-          state.lruQueue.shortExam = newQueue;
-        }
-      };
-    
-    default:
-      throw new Error(`Unknown quiz type for subjects: ${quizType}`);
-  }
+  return [route || 'default', courseId || 'all', category || 'all'].join('|');
 };
 
 const subjectSlice = createSlice({
   name: 'subjects',
   initialState,
   reducers: {
-    setSubjects(
-      state,
-      action: PayloadAction<{
+    setSubjects: {
+      reducer(
+        state,
+        action: PayloadAction<{
+          quizType: string;
+          examSubjects: ExamTypeSubjects[];
+          route?: string;
+          filters?: {
+            courseId?: string;
+            category?: string;
+          };
+          timestamp: number;
+        }>
+      ) {
+        const { quizType, examSubjects, route, filters, timestamp } = action.payload;
+        const normalizedType = normalizeQuizType(quizType);
+        const cache = state.caches[normalizedType];
+        const lruQueue = state.lruQueues[normalizedType];
+        const cacheKey = generateCacheKey(route, filters?.courseId, filters?.category);
+
+        cache[cacheKey] = {
+          examSubjects,
+          timestamp,
+          route,
+          filters
+        };
+
+        const existingIndex = lruQueue.indexOf(cacheKey);
+        if (existingIndex !== -1) {
+          lruQueue.splice(existingIndex, 1);
+        }
+        lruQueue.push(cacheKey);
+
+        if (lruQueue.length > state.maxCacheSize) {
+          const evictKey = lruQueue.shift();
+          if (evictKey) {
+            delete cache[evictKey];
+          }
+        }
+      },
+      prepare(payload: {
         quizType: string;
-        groupedSubjects: Record<string, string[]>;
-        timestamp?: number;
+        examSubjects: ExamTypeSubjects[];
         route?: string;
         filters?: {
           courseId?: string;
           category?: string;
         };
-      }>
-    ) {
-      const {
-        quizType,
-        groupedSubjects,
-        timestamp = Date.now(),
-        route,
-        filters
-      } = action.payload;
-
-      try {
-        const cacheStore = getSubjectCacheStore(state, quizType);
-        const cacheKey = generateSubjectCacheKey(route, filters?.courseId, filters?.category);
-
-        // Create cache entry
-        const cacheEntry: SubjectCacheEntry = {
-          groupedSubjects,
-          timestamp,
-          route,
-          filters
-        };
-
-        // Store in appropriate cache
-        cacheStore.setCacheEntry(cacheKey, cacheEntry);
-
-        // Update LRU queue
-        const existingIndex = cacheStore.lru.indexOf(cacheKey);
-        if (existingIndex !== -1) {
-          cacheStore.lru.splice(existingIndex, 1);
-        }
-        cacheStore.lru.push(cacheKey);
-
-        // Evict least recently used if over limit
-        if (cacheStore.lru.length > state.maxCacheSize) {
-          const evictKey = cacheStore.lru.shift();
-          if (evictKey) {
-            cacheStore.deleteCacheEntry(evictKey);
+      }) {
+        return {
+          payload: {
+            ...payload,
+            timestamp: Date.now()
           }
-        }
-      } catch (error) {
-        console.warn('Error setting subjects in cache:', error);
-        
-        // Fallback: store in a generic way (backward compatibility)
-        const fallbackKey = `${quizType}_fallback`;
-        state.dppSubjects[fallbackKey] = {
-          groupedSubjects,
-          timestamp,
-          route,
-          filters
         };
       }
     },
 
-    // Get subjects with specific cache key
-    getSubjects: (state, action: PayloadAction<{
-      quizType: string;
-      route?: string;
-      filters?: {
-        courseId?: string;
-        category?: string;
-      };
-    }>) => {
-      // This is handled by selectors, but keeping for consistency
-    },
+    mergeSubjects: {
+      reducer(
+        state,
+        action: PayloadAction<{
+          quizType: string;
+          examSubjects: ExamTypeSubjects[];
+          route?: string;
+          filters?: {
+            courseId?: string;
+            category?: string;
+          };
+          timestamp: number;
+        }>
+      ) {
+        const { quizType, examSubjects, route, filters } = action.payload;
+        const normalizedType = normalizeQuizType(quizType);
+        const cache = state.caches[normalizedType];
+        const lruQueue = state.lruQueues[normalizedType];
+        const cacheKey = generateCacheKey(route, filters?.courseId, filters?.category);
 
-    // Merge subjects instead of replacing (useful for incremental loading)
-    mergeSubjects(
-      state,
-      action: PayloadAction<{
-        quizType: string;
-        groupedSubjects: Record<string, string[]>;
-        route?: string;
-        filters?: {
-          courseId?: string;
-          category?: string;
-        };
-      }>
-    ) {
-      const { quizType, groupedSubjects, route, filters } = action.payload;
-
-      try {
-        const cacheStore = getSubjectCacheStore(state, quizType);
-        const cacheKey = generateSubjectCacheKey(route, filters?.courseId, filters?.category);
-
-        const existingEntry = cacheStore.cache[cacheKey];
+        const existingEntry = cache[cacheKey];
         
         if (existingEntry) {
-          // Merge with existing data
-          const mergedSubjects = { ...existingEntry.groupedSubjects };
+          const mergedExamSubjects = [...existingEntry.examSubjects];
           
-          Object.entries(groupedSubjects).forEach(([examType, subjects]) => {
-            if (mergedSubjects[examType]) {
-              // Merge and deduplicate subjects
-              const existingSubjects = new Set(mergedSubjects[examType]);
-              subjects.forEach(subject => existingSubjects.add(subject));
-              mergedSubjects[examType] = Array.from(existingSubjects);
+          examSubjects.forEach(newExamType => {
+            const existingExamIndex = mergedExamSubjects.findIndex(
+              e => e.examType === newExamType.examType
+            );
+            
+            if (existingExamIndex >= 0) {
+              const existingSubjects = mergedExamSubjects[existingExamIndex].subjects;
+              const newSubjectsMap = new Map(newExamType.subjects.map(s => [s.id, s]));
+              
+              const mergedSubjects = [...existingSubjects];
+              newSubjectsMap.forEach((subject, id) => {
+                if (!existingSubjects.some(s => s.id === id)) {
+                  mergedSubjects.push(subject);
+                }
+              });
+              
+              mergedExamSubjects[existingExamIndex] = {
+                ...mergedExamSubjects[existingExamIndex],
+                subjects: mergedSubjects
+              };
             } else {
-              mergedSubjects[examType] = subjects;
+              mergedExamSubjects.push(newExamType);
             }
           });
 
-          cacheStore.setCacheEntry(cacheKey, {
+          cache[cacheKey] = {
             ...existingEntry,
-            groupedSubjects: mergedSubjects,
+            examSubjects: mergedExamSubjects,
             timestamp: Date.now()
-          });
+          };
         } else {
-          // Create new entry if doesn't exist
-          cacheStore.setCacheEntry(cacheKey, {
-            groupedSubjects,
+          cache[cacheKey] = {
+            examSubjects,
             timestamp: Date.now(),
             route,
             filters
-          });
+          };
         }
-      } catch (error) {
-        console.warn('Error merging subjects:', error);
+
+        const lruIndex = lruQueue.indexOf(cacheKey);
+        if (lruIndex >= 0) lruQueue.splice(lruIndex, 1);
+        lruQueue.push(cacheKey);
+      },
+      prepare(payload: {
+        quizType: string;
+        examSubjects: ExamTypeSubjects[];
+        route?: string;
+        filters?: {
+          courseId?: string;
+          category?: string;
+        };
+      }) {
+        return {
+          payload: {
+            ...payload,
+            timestamp: Date.now()
+          }
+        };
       }
     },
 
-    // Clear subjects for specific quiz type and cache key
-    clearSubjects(state, action: PayloadAction<{
-      quizType: string;
-      route?: string;
-      filters?: {
-        courseId?: string;
-        category?: string;
-      };
-    }>) {
+    clearSubjects(
+      state,
+      action: PayloadAction<{
+        quizType: string;
+        route?: string;
+        filters?: {
+          courseId?: string;
+          category?: string;
+        };
+      }>
+    ) {
       const { quizType, route, filters } = action.payload;
+      const normalizedType = normalizeQuizType(quizType);
+      const cacheKey = generateCacheKey(route, filters?.courseId, filters?.category);
 
-      try {
-        const cacheStore = getSubjectCacheStore(state, quizType);
-        const cacheKey = generateSubjectCacheKey(route, filters?.courseId, filters?.category);
-
-        cacheStore.deleteCacheEntry(cacheKey);
-        const index = cacheStore.lru.indexOf(cacheKey);
-        if (index !== -1) {
-          cacheStore.lru.splice(index, 1);
-        }
-      } catch (error) {
-        console.warn('Error clearing subjects:', error);
-      }
+      delete state.caches[normalizedType][cacheKey];
+      state.lruQueues[normalizedType] = state.lruQueues[normalizedType].filter(
+        key => key !== cacheKey
+      );
     },
 
-    // Clear all subjects for a quiz type
-    clearSubjectsByType(state, action: PayloadAction<string>) {
-      const quizType = action.payload;
-
-      try {
-        const cacheStore = getSubjectCacheStore(state, quizType);
-        
-        // Clear all cache entries
-        Object.keys(cacheStore.cache).forEach(key => {
-          cacheStore.deleteCacheEntry(key);
-        });
-        
-        // Clear LRU queue
-        cacheStore.updateLru([]);
-      } catch (error) {
-        console.warn('Error clearing subjects by type:', error);
-      }
-    },
-
-    // Clear all subject caches
     clearAllSubjects(state) {
-      state.dppSubjects = {};
-      state.shortExamSubjects = {};
-      state.lruQueue = {
-        dpp: [],
-        shortExam: [],
-      };
+      state.caches.dpp = {};
+      state.caches.shortExam = {};
+      state.lruQueues.dpp = [];
+      state.lruQueues.shortExam = [];
     },
 
-    // Clean expired subject cache entries
     cleanExpiredSubjects(state, action: PayloadAction<number>) {
-      const maxAge = action.payload; // milliseconds
+      const maxAge = action.payload;
       const now = Date.now();
 
-      const cleanCache = (cache: Record<string, SubjectCacheEntry>, lru: string[]) => {
-        const expiredKeys: string[] = [];
-        
-        Object.entries(cache).forEach(([key, entry]) => {
-          if (now - entry.timestamp > maxAge) {
-            expiredKeys.push(key);
-          }
-        });
+      const cleanCache = (cache: QuizTypeCache, lruQueue: string[]) => {
+        const expiredKeys = Object.entries(cache)
+          .filter(([_, entry]) => now - entry.timestamp > maxAge)
+          .map(([key]) => key);
 
         expiredKeys.forEach(key => {
           delete cache[key];
-          const index = lru.indexOf(key);
+          const index = lruQueue.indexOf(key);
           if (index !== -1) {
-            lru.splice(index, 1);
+            lruQueue.splice(index, 1);
           }
         });
       };
 
-      cleanCache(state.dppSubjects, state.lruQueue.dpp);
-      cleanCache(state.shortExamSubjects, state.lruQueue.shortExam);
-    },
-
-    // Legacy support - for backward compatibility
-    removeSubjectsByType(state, action: PayloadAction<string>) {
-      // Map to new clearSubjectsByType action
-      const quizType = action.payload;
-      try {
-        const cacheStore = getSubjectCacheStore(state, quizType);
-        Object.keys(cacheStore.cache).forEach(key => {
-          cacheStore.deleteCacheEntry(key);
-        });
-        cacheStore.updateLru([]);
-      } catch (error) {
-        console.warn('Error in legacy removeSubjectsByType:', error);
-      }
-    },
-  },
+      cleanCache(state.caches.dpp, state.lruQueues.dpp);
+      cleanCache(state.caches.shortExam, state.lruQueues.shortExam);
+    }
+  }
 });
 
-// Selectors for accessing cached subject data
+// Selectors
+export const selectSubjectCacheEntry = (
+  state: { subjects: SubjectState },
+  quizType: string,
+  route?: string,
+  filters?: {
+    courseId?: string;
+    category?: string;
+  }
+): SubjectCacheEntry | null => {
+  try {
+    const normalizedType = normalizeQuizType(quizType);
+    const cacheKey = generateCacheKey(route, filters?.courseId, filters?.category);
+    return state.subjects.caches[normalizedType][cacheKey] || null;
+  } catch {
+    return null;
+  }
+};
+
 export const selectSubjectCache = (
   state: { subjects: SubjectState },
   quizType: string,
@@ -333,75 +290,49 @@ export const selectSubjectCache = (
     courseId?: string;
     category?: string;
   }
-): SubjectCacheEntry | undefined => {
-  try {
-    const cacheStore = getSubjectCacheStore(state.subjects, quizType);
-    const cacheKey = generateSubjectCacheKey(route, filters?.courseId, filters?.category);
-    return cacheStore.cache[cacheKey];
-  } catch (error) {
-    console.warn('Error selecting subject cache:', error);
-    
-    // Fallback: try to get from legacy cache structure
-    const fallbackKey = `${quizType}_fallback`;
-    return state.subjects.dppSubjects[fallbackKey];
-  }
+): ExamTypeSubjects[] | null => {
+  const entry = selectSubjectCacheEntry(state, quizType, route, filters);
+  return entry?.examSubjects || null;
 };
 
-// Selector to check if subject cache is valid (not expired)
 export const selectIsSubjectCacheValid = (
   state: { subjects: SubjectState },
   quizType: string,
-  maxAge: number, // milliseconds
+  maxAge: number,
   route?: string,
   filters?: {
     courseId?: string;
     category?: string;
   }
 ): boolean => {
-  const cachedData = selectSubjectCache(state, quizType, route, filters);
-  if (!cachedData) return false;
-  
-  return Date.now() - cachedData.timestamp <= maxAge;
+  const cachedEntry = selectSubjectCacheEntry(state, quizType, route, filters);
+  return cachedEntry ? Date.now() - cachedEntry.timestamp <= maxAge : false;
 };
 
-// Selector to get all subjects for a quiz type (across all cache keys)
-export const selectAllSubjectsForType = (
+export const selectSubjectsForExamType = (
   state: { subjects: SubjectState },
-  quizType: string
-): Record<string, string[]> => {
-  try {
-    const cacheStore = getSubjectCacheStore(state.subjects, quizType);
-    const allSubjects: Record<string, string[]> = {};
-    
-    Object.values(cacheStore.cache).forEach(entry => {
-      Object.entries(entry.groupedSubjects).forEach(([examType, subjects]) => {
-        if (allSubjects[examType]) {
-          // Merge and deduplicate
-          const existingSubjects = new Set(allSubjects[examType]);
-          subjects.forEach(subject => existingSubjects.add(subject));
-          allSubjects[examType] = Array.from(existingSubjects);
-        } else {
-          allSubjects[examType] = [...subjects];
-        }
-      });
-    });
-    
-    return allSubjects;
-  } catch (error) {
-    console.warn('Error selecting all subjects for type:', error);
-    return {};
+  quizType: string,
+  examType: string,
+  route?: string,
+  filters?: {
+    courseId?: string;
+    category?: string;
   }
+): Subject[] | null => {
+  const allSubjects = selectSubjectCache(state, quizType, route, filters);
+  if (!allSubjects) return null;
+
+  const examSubjects = allSubjects.find(e => e.examType === examType);
+  return examSubjects ? examSubjects.subjects : null;
 };
 
-export const { 
-  setSubjects, 
-  getSubjects,
+export const {
+  setSubjects,
   mergeSubjects,
-  clearSubjects, 
-  clearSubjectsByType,
+  clearSubjects,
   clearAllSubjects,
-  cleanExpiredSubjects,
-  removeSubjectsByType // Legacy support
+  cleanExpiredSubjects
 } = subjectSlice.actions;
 
 export default subjectSlice.reducer;
+

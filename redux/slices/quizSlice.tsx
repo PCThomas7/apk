@@ -1,34 +1,194 @@
+// import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+// interface QuizMeta {
+//   id: string;
+//   title: string;
+//   quizType: string;
+//   duration?: string;
+//   content: string;
+// }
+
+// interface QuizCacheEntry {
+//   quizzes: QuizMeta[];
+//   timestamp: number;
+// }
+
+// interface QuizTypeCache {
+//   [key: string]: QuizCacheEntry;
+// }
+
+// interface QuizState {
+//   caches: {
+//     dpp: QuizTypeCache;
+//     mockExam: QuizTypeCache;
+//     shortExam: QuizTypeCache;
+//     // Add other quiz types as needed
+//   };
+//   lruQueues: {
+//     dpp: string[];
+//     mockExam: string[];
+//     shortExam: string[];
+//   };
+//   maxCacheSize: number;
+// }
+
+// const initialState: QuizState = {
+//   caches: {
+//     dpp: {},
+//     mockExam: {},
+//     shortExam: {},
+//   },
+//   lruQueues: {
+//     dpp: [],
+//     mockExam: [],
+//     shortExam: [],
+//   },
+//   maxCacheSize: 20, // Per quiz type
+// };
+
+// // Normalize quiz type for consistent cache keys
+// const normalizeQuizType = (quizType: string): keyof QuizState['caches'] => {
+//   const type = quizType.toLowerCase();
+//   if (type.includes('dpp') || type.includes('daily')) return 'dpp';
+//   if (type.includes('mock')) return 'mockExam';
+//   if (type.includes('short')) return 'shortExam';
+//   return 'dpp'; // default
+// };
+
+// // Generate cache key with quiz type and route
+// const generateCacheKey = (route?: string) => {
+//   return route || 'default';
+// };
+
+// const quizSlice = createSlice({
+//   name: 'quizzes',
+//   initialState,
+//   reducers: {
+//     setQuizzes(
+//       state,
+//       action: PayloadAction<{
+//         quizType: string;
+//         quizzes: QuizMeta[];
+//         route?: string;
+//       }>
+//     ) {
+//       const { quizType, quizzes, route } = action.payload;
+//       const normalizedType = normalizeQuizType(quizType);
+//       const cache = state.caches[normalizedType];
+//       const lruQueue = state.lruQueues[normalizedType];
+//       const key = generateCacheKey(route);
+
+//       // Update cache
+//       cache[key] = {
+//         quizzes,
+//         timestamp: Date.now(),
+//       };
+
+//       // Update LRU queue
+//       const existingIndex = lruQueue.indexOf(key);
+//       if (existingIndex !== -1) {
+//         lruQueue.splice(existingIndex, 1);
+//       }
+//       lruQueue.push(key);
+
+//       // Enforce max cache size
+//       if (lruQueue.length > state.maxCacheSize) {
+//         const evictKey = lruQueue.shift();
+//         if (evictKey) {
+//           delete cache[evictKey];
+//         }
+//       }
+//     },
+
+//     clearQuizCache(
+//       state,
+//       action: PayloadAction<{
+//         quizType: string;
+//         route?: string;
+//       }>
+//     ) {
+//       const { quizType, route } = action.payload;
+//       const normalizedType = normalizeQuizType(quizType);
+//       const key = generateCacheKey(route);
+
+//       delete state.caches[normalizedType][key];
+//       state.lruQueues[normalizedType] = state.lruQueues[normalizedType].filter(
+//         (k) => k !== key
+//       );
+//     },
+
+//     clearQuizTypeCache(state, action: PayloadAction<string>) {
+//       const normalizedType = normalizeQuizType(action.payload);
+//       state.caches[normalizedType] = {};
+//       state.lruQueues[normalizedType] = [];
+//     },
+
+//     clearAllQuizCache(state) {
+//       Object.keys(state.caches).forEach((type) => {
+//         state.caches[type as keyof QuizState['caches']] = {};
+//         state.lruQueues[type as keyof QuizState['lruQueues']] = [];
+//       });
+//     },
+//   },
+// });
+
+// // Selectors
+// export const selectQuizCache = (
+//   state: { quizzes: QuizState },
+//   quizType: string,
+//   route?: string
+// ): QuizCacheEntry | undefined => {
+//   const normalizedType = normalizeQuizType(quizType);
+//   const key = generateCacheKey(route);
+//   return state.quizzes.caches[normalizedType][key];
+// };
+
+// export const selectIsCacheValid = (
+//   state: { quizzes: QuizState },
+//   quizType: string,
+//   maxAge: number,
+//   route?: string
+// ): boolean => {
+//   const cachedData = selectQuizCache(state, quizType, route);
+//   return cachedData ? Date.now() - cachedData.timestamp <= maxAge : false;
+// };
+
+// export const {
+//   setQuizzes,
+//   clearQuizCache,
+//   clearQuizTypeCache,
+//   clearAllQuizCache,
+// } = quizSlice.actions;
+
+// export default quizSlice.reducer;
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSelector } from '@reduxjs/toolkit';
 
 interface QuizMeta {
-  id: string;
+  _id: string;
   title: string;
-  duration: number;
-  subject?: string;
-  chapter?: string;
-  examType?: string;
-  difficulty?: string;
-  totalQuestions?: number;
-  // Add more fields as needed
+  quizType: string;
+  duration?: string;
+  content: string;
 }
 
 interface QuizCacheEntry {
   quizzes: QuizMeta[];
   timestamp: number;
-  route?: string; // Track which route/screen cached this data
-  filters?: {
-    subject?: string;
-    chapter?: string;
-    examType?: string;
-  };
 }
 
-// Separate cache stores for different quiz types
+interface QuizTypeCache {
+  [key: string]: QuizCacheEntry;
+}
+
 interface QuizState {
-  dppCache: Record<string, QuizCacheEntry>; // DPP quizzes
-  mockExamCache: Record<string, QuizCacheEntry>; // Mock exam quizzes
-  shortExamCache: Record<string, QuizCacheEntry>; // Short exam quizzes
-  lruQueue: {
+  caches: {
+    dpp: QuizTypeCache;
+    mockExam: QuizTypeCache;
+    shortExam: QuizTypeCache;
+  };
+  lruQueues: {
     dpp: string[];
     mockExam: string[];
     shortExam: string[];
@@ -37,91 +197,37 @@ interface QuizState {
 }
 
 const initialState: QuizState = {
-  dppCache: {},
-  mockExamCache: {},
-  shortExamCache: {},
-  lruQueue: {
+  caches: {
+    dpp: {},
+    mockExam: {},
+    shortExam: {},
+  },
+  lruQueues: {
     dpp: [],
     mockExam: [],
     shortExam: [],
   },
-  maxCacheSize: 50,
+  maxCacheSize: 20, // Per quiz type
 };
 
-// Helper function to get the correct cache and LRU queue
-const getCacheStore = (state: QuizState, quizType: string) => {
-  switch (quizType.toLowerCase()) {
-    case 'dpp':
-    case 'daily practice problem':
-      return {
-        cache: state.dppCache,
-        lru: state.lruQueue.dpp,
-        setCacheEntry: (key: string, entry: QuizCacheEntry) => {
-          state.dppCache[key] = entry;
-        },
-        deleteCacheEntry: (key: string) => {
-          delete state.dppCache[key];
-        },
-        updateLru: (newQueue: string[]) => {
-          state.lruQueue.dpp = newQueue;
-        }
-      };
-    case 'mock exam':
-    case 'mock examination':
-      return {
-        cache: state.mockExamCache,
-        lru: state.lruQueue.mockExam,
-        setCacheEntry: (key: string, entry: QuizCacheEntry) => {
-          state.mockExamCache[key] = entry;
-        },
-        deleteCacheEntry: (key: string) => {
-          delete state.mockExamCache[key];
-        },
-        updateLru: (newQueue: string[]) => {
-          state.lruQueue.mockExam = newQueue;
-        }
-      };
-    case 'short exam':
-    case 'short examination':
-      return {
-        cache: state.shortExamCache,
-        lru: state.lruQueue.shortExam,
-        setCacheEntry: (key: string, entry: QuizCacheEntry) => {
-          state.shortExamCache[key] = entry;
-        },
-        deleteCacheEntry: (key: string) => {
-          delete state.shortExamCache[key];
-        },
-        updateLru: (newQueue: string[]) => {
-          state.lruQueue.shortExam = newQueue;
-        }
-      };
-    default:
-      throw new Error(`Unknown quiz type: ${quizType}`);
-  }
+const normalizeQuizType = (quizType: string): keyof QuizState['caches'] => {
+  const type = quizType.toLowerCase();
+  if (type.includes('mock')) return 'mockExam';
+  if (type.includes('short')) return 'shortExam';
+  return 'dpp'; // Default to DPP
 };
 
-// Generate more specific cache keys
 const generateCacheKey = (
-  quizType: string,
-  subject?: string,
-  chapter?: string,
-  examType?: string,
-  route?: string
-) => {
-  const parts = [
-    quizType.toLowerCase().replace(/\s+/g, '_'),
-    subject || 'all',
-    chapter || 'all',
-    examType || 'all'
-  ];
-  
-  // Add route information for additional uniqueness
-  if (route) {
-    parts.push(route);
+  quizType: string, 
+  subject?: string, 
+  chapter?: string, 
+  examType?: string
+): string => {
+  const normalizedType = normalizeQuizType(quizType);
+  if (normalizedType === 'mockExam') {
+    return `quizzes_${normalizedType}`;
   }
-  
-  return parts.join('_');
+  return `quizzes_${normalizedType}_${subject}_${chapter}_${examType}`;
 };
 
 const quizSlice = createSlice({
@@ -136,190 +242,106 @@ const quizSlice = createSlice({
         subject?: string;
         chapter?: string;
         examType?: string;
-        route?: string; // Which screen/route is caching this
-        timestamp?: number;
       }>
     ) {
-      const { 
-        quizType, 
-        quizzes, 
-        subject, 
-        chapter, 
-        examType, 
-        route,
-        timestamp = Date.now() 
-      } = action.payload;
+      const { quizType, quizzes, subject, chapter, examType } = action.payload;
+      const normalizedType = normalizeQuizType(quizType);
+      const key = generateCacheKey(quizType, subject, chapter, examType);
 
-      try {
-        const cacheStore = getCacheStore(state, quizType);
-        const key = generateCacheKey(quizType, subject, chapter, examType, route);
+      // Update cache
+      state.caches[normalizedType][key] = {
+        quizzes,
+        timestamp: Date.now(),
+      };
 
-        // Save quizzes to appropriate cache
-        const cacheEntry: QuizCacheEntry = {
-          quizzes,
-          timestamp,
-          route,
-          filters: { subject, chapter, examType }
-        };
+      // Update LRU queue
+      const lruQueue = state.lruQueues[normalizedType];
+      const existingIndex = lruQueue.indexOf(key);
+      if (existingIndex !== -1) {
+        lruQueue.splice(existingIndex, 1);
+      }
+      lruQueue.push(key);
 
-        cacheStore.setCacheEntry(key, cacheEntry);
-
-        // Update LRU queue
-        const existingIndex = cacheStore.lru.indexOf(key);
-        if (existingIndex !== -1) {
-          cacheStore.lru.splice(existingIndex, 1);
+      // Enforce max cache size
+      if (lruQueue.length > state.maxCacheSize) {
+        const evictKey = lruQueue.shift();
+        if (evictKey) {
+          delete state.caches[normalizedType][evictKey];
         }
-        cacheStore.lru.push(key);
-
-        // Evict least recently used if over limit
-        if (cacheStore.lru.length > state.maxCacheSize) {
-          const evictKey = cacheStore.lru.shift();
-          if (evictKey) {
-            cacheStore.deleteCacheEntry(evictKey);
-          }
-        }
-      } catch (error) {
-        console.warn('Error setting quizzes in cache:', error);
       }
     },
+    clearQuizCache(
+      state,
+      action: PayloadAction<{
+        quizType: string;
+        subject?: string;
+        chapter?: string;
+        examType?: string;
+      }>
+    ) {
+      const { quizType, subject, chapter, examType } = action.payload;
+      const normalizedType = normalizeQuizType(quizType);
+      const key = generateCacheKey(quizType, subject, chapter, examType);
 
-    // Get quizzes from cache
-    getQuizzes: (state, action: PayloadAction<{
-      quizType: string;
-      subject?: string;
-      chapter?: string;
-      examType?: string;
-      route?: string;
-    }>) => {
-      // This is handled by selectors, but keeping for consistency
+      delete state.caches[normalizedType][key];
+      state.lruQueues[normalizedType] = state.lruQueues[normalizedType].filter(
+        (k) => k !== key
+      );
     },
-
-    // Clear cache for specific quiz type
-    clearQuizCache(state, action: PayloadAction<{
-      quizType: string;
-      subject?: string;
-      chapter?: string;
-      examType?: string;
-      route?: string;
-    }>) {
-      const { quizType, subject, chapter, examType, route } = action.payload;
-      
-      try {
-        const cacheStore = getCacheStore(state, quizType);
-        const key = generateCacheKey(quizType, subject, chapter, examType, route);
-        
-        cacheStore.deleteCacheEntry(key);
-        const index = cacheStore.lru.indexOf(key);
-        if (index !== -1) {
-          cacheStore.lru.splice(index, 1);
-        }
-      } catch (error) {
-        console.warn('Error clearing quiz cache:', error);
-      }
-    },
-
-    // Clear entire cache for a quiz type
-    clearQuizTypeCache(state, action: PayloadAction<string>) {
-      const quizType = action.payload;
-      
-      try {
-        const cacheStore = getCacheStore(state, quizType);
-        
-        // Clear all entries
-        Object.keys(cacheStore.cache).forEach(key => {
-          cacheStore.deleteCacheEntry(key);
-        });
-        
-        // Clear LRU queue
-        cacheStore.updateLru([]);
-      } catch (error) {
-        console.warn('Error clearing quiz type cache:', error);
-      }
-    },
-
-    // Clear all caches
     clearAllQuizCache(state) {
-      state.dppCache = {};
-      state.mockExamCache = {};
-      state.shortExamCache = {};
-      state.lruQueue = {
-        dpp: [],
-        mockExam: [],
-        shortExam: [],
-      };
-    },
-
-    // Clean expired cache entries
-    cleanExpiredCache(state, action: PayloadAction<number>) {
-      const maxAge = action.payload; // milliseconds
-      const now = Date.now();
-
-      const cleanCache = (cache: Record<string, QuizCacheEntry>, lru: string[]) => {
-        const expiredKeys: string[] = [];
-        
-        Object.entries(cache).forEach(([key, entry]) => {
-          if (now - entry.timestamp > maxAge) {
-            expiredKeys.push(key);
-          }
-        });
-
-        expiredKeys.forEach(key => {
-          delete cache[key];
-          const index = lru.indexOf(key);
-          if (index !== -1) {
-            lru.splice(index, 1);
-          }
-        });
-      };
-
-      cleanCache(state.dppCache, state.lruQueue.dpp);
-      cleanCache(state.mockExamCache, state.lruQueue.mockExam);
-      cleanCache(state.shortExamCache, state.lruQueue.shortExam);
+      Object.keys(state.caches).forEach((type) => {
+        state.caches[type as keyof QuizState['caches']] = {};
+        state.lruQueues[type as keyof QuizState['lruQueues']] = [];
+      });
     },
   },
 });
 
-// Selectors for getting cached data
-export const selectQuizCache = (
-  state: { quizzes: QuizState },
-  quizType: string,
-  subject?: string,
-  chapter?: string,
-  examType?: string,
-  route?: string
-): QuizCacheEntry | undefined => {
-  try {
-    const cacheStore = getCacheStore(state.quizzes, quizType);
-    const key = generateCacheKey(quizType, subject, chapter, examType, route);
-    return cacheStore.cache[key];
-  } catch (error) {
-    console.warn('Error selecting quiz cache:', error);
-    return undefined;
+// Selectors
+const selectCacheByType = createSelector(
+  (state: { quizzes: QuizState }) => state.quizzes.caches,
+  (_: unknown, quizType: string) => quizType,
+  (caches, quizType) => {
+    const normalizedType = normalizeQuizType(quizType);
+    return caches[normalizedType];
   }
-};
+);
 
-// Selector to check if cache is valid (not expired)
-export const selectIsCacheValid = (
-  state: { quizzes: QuizState },
-  quizType: string,
-  maxAge: number, // milliseconds
-  subject?: string,
-  chapter?: string,
-  examType?: string,
-  route?: string
-): boolean => {
-  const cachedData = selectQuizCache(state, quizType, subject, chapter, examType, route);
-  if (!cachedData) return false;
-  
-  return Date.now() - cachedData.timestamp <= maxAge;
-};
+// Memoized selector for quiz cache
+export const selectQuizCache = createSelector(
+  [
+    selectCacheByType,
+    (_: unknown, quizType: string) => quizType,
+    (_: unknown, _quizType: string, subject?: string | null) => subject,
+    (_: unknown, _quizType: string, _subject?: string | null, chapter?: string | null) => chapter,
+    (_: unknown, _quizType: string, _subject?: string | null, _chapter?: string | null, examType?: string | null) => examType
+  ],
+  (cache, quizType, subject, chapter, examType) => {
+    const key = generateCacheKey(
+      quizType,
+      subject || undefined,
+      chapter || undefined,
+      examType || undefined
+    );
+    return cache[key]?.quizzes;
+  }
+);
 
-export const { 
-  setQuizzes, 
-  clearQuizCache, 
-  clearQuizTypeCache,
-  clearAllQuizCache,
-  cleanExpiredCache 
-} = quizSlice.actions;
-
+// Memoized selector for cache validity
+export const selectIsCacheValid = createSelector(
+  [
+    selectCacheByType,
+    (_: unknown, quizType: string) => quizType,
+    (_: unknown, _quizType: string, _maxAge: number, subject?: string) => subject,
+    (_: unknown, _quizType: string, _maxAge: number, _subject?: string, chapter?: string) => chapter,
+    (_: unknown, _quizType: string, _maxAge: number, _subject?: string, _chapter?: string, examType?: string) => examType,
+    (_: unknown, _quizType: string, maxAge: number) => maxAge
+  ],
+  (cache, quizType, subject, chapter, examType, maxAge) => {
+    const key = generateCacheKey(quizType, subject, chapter, examType);
+    const entry = cache[key];
+    return entry ? Date.now() - entry.timestamp <= maxAge : false;
+  }
+);
+export const { setQuizzes, clearQuizCache, clearAllQuizCache } = quizSlice.actions;
 export default quizSlice.reducer;

@@ -7,15 +7,15 @@ import {
     ActivityIndicator,
     ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import courseServiceGet from '@/services/courseServiceGet';
-import ResponsiveSkeleton from '../skeltons/Skelton';
-import { setSubjects, selectSubjectCache, selectIsSubjectCacheValid } from '@/redux/slices/subjectSlice';
+import courseServiceGet from '../../../services/courseServiceGet';
+import { setSubjects, selectSubjectCacheEntry, selectIsSubjectCacheValid } from '@/redux/slices/subjectSlice';
 import { Ionicons } from '@expo/vector-icons';
+import ResponsiveGridSkeleton from '../skeltons/Skelton';
 
-
-const CACHE_EXPIRY = 3 * 60 * 1000; // 3 minutes
+const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
 interface Subject {
     subject: string;
@@ -28,14 +28,18 @@ interface ExamTypeGroup {
     subjects: Subject[];
 }
 
+interface ApiResponse {
+    groupedSubjects: ExamTypeGroup[];
+}
+
 const SubjectSelectionScreen = () => {
     const { quizType } = useLocalSearchParams<{ quizType: string }>();
     const router = useRouter();
     const dispatch = useAppDispatch();
 
     const currentRoute = 'subject-selection';
-    const cache = useAppSelector((state) =>
-        selectSubjectCache(state, quizType || '', currentRoute)
+    const cachedEntry = useAppSelector((state) =>
+        selectSubjectCacheEntry(state, quizType || '', currentRoute)
     );
     const isCacheValid = useAppSelector((state) =>
         selectIsSubjectCacheValid(state, quizType || '', CACHE_EXPIRY, currentRoute)
@@ -49,7 +53,6 @@ const SubjectSelectionScreen = () => {
         switch (quizType) {
             case 'DPP': return 'Daily Practice Problems';
             case 'Short Exam': return 'Short Examinations';
-            case 'Mock Exam': return 'Mock Examinations';
             default: return 'Practice Tests';
         }
     }, [quizType]);
@@ -57,56 +60,56 @@ const SubjectSelectionScreen = () => {
     const fetchSubjects = useCallback(async () => {
         if (!quizType || quizType === 'Mock Exam') return;
 
-        const now = Date.now();
+        try {
+            setLoading(true);
+            setError('');
 
-        if (cache && isCacheValid && cache.groupedSubjects) {
-            const reconstructed: ExamTypeGroup[] = Object.entries(cache.groupedSubjects).map(
-                ([examType, subjects]) => ({
-                    examType,
-                    subjects: Array.isArray(subjects)
-                        ? subjects.map((subjectName: string) => ({
-                            subject: subjectName,
-                            courseName: '',
-                            courseId: '',
-                        }))
-                        : []
-                })
-            );
-            setExamTypeGroups(reconstructed);
-            return;
-        }
-
-        if (quizType === 'DPP' || quizType === 'Short Exam') {
-            try {
-                setLoading(true);
-                setError('');
-
-                const response = await courseServiceGet.getDppSubjects(quizType);
-                setExamTypeGroups(response.groupedSubjects || []);
-
-                const transformed = response.groupedSubjects.reduce(
-                    (acc: Record<string, string[]>, group: { examType: string; subjects: Array<{ subject: string }> }) => {
-                        acc[group.examType] = group.subjects.map(subjectItem => subjectItem.subject);
-                        return acc;
-                    },
-                    {}
-                );
-
-                dispatch(setSubjects({
-                    quizType,
-                    groupedSubjects: transformed,
-                    timestamp: now,
-                    route: currentRoute,
+            // Use cached data if valid - with proper type checking
+            if (cachedEntry && isCacheValid && cachedEntry.examSubjects) {
+                // Ensure the cached data matches our component's expected type
+                const cachedGroups: ExamTypeGroup[] = cachedEntry.examSubjects.map(group => ({
+                    examType: group.examType,
+                    subjects: group.subjects.map(sub => ({
+                        subject: sub.name, // Map from your slice's Subject.name to component's Subject.subject
+                        courseName: '',    // Default values if not in cache
+                        courseId: ''       // Default values if not in cache
+                    }))
                 }));
-
-            } catch (err) {
-                console.error('Fetch subject error:', err);
-                setError('Unable to load subjects. Please try again.');
-            } finally {
-                setLoading(false);
+                setExamTypeGroups(cachedGroups);
+                return;
             }
+
+            // Fetch fresh data with proper typing
+            const response = await courseServiceGet.getDppSubjects(quizType);
+            if (!response || !response.groupedSubjects) {
+                throw new Error('Invalid response format');
+            }
+
+            const subjectsData: ExamTypeGroup[] = response.groupedSubjects;
+            setExamTypeGroups(subjectsData);
+
+            // Prepare data for Redux cache (mapping to the slice's expected format)
+            const cacheData = subjectsData.map(group => ({
+                examType: group.examType,
+                subjects: group.subjects.map(sub => ({
+                    id: sub.courseId || '',  // Using courseId as id if your slice requires it
+                    name: sub.subject        // Mapping to your slice's Subject.name
+                }))
+            }));
+
+            dispatch(setSubjects({
+                quizType,
+                examSubjects: cacheData,
+                route: currentRoute
+            }));
+
+        } catch (err) {
+            console.error('Error fetching subjects:', err);
+            setError('Unable to load subjects. Please try again.');
+        } finally {
+            setLoading(false);
         }
-    }, [quizType, cache, isCacheValid, dispatch, currentRoute]);
+    }, [quizType, cachedEntry, isCacheValid, dispatch]);
 
     useEffect(() => {
         fetchSubjects();
@@ -129,10 +132,10 @@ const SubjectSelectionScreen = () => {
     }, [router, quizType]);
 
     const renderSubjectCard = useCallback((subject: Subject, examType: string) => (
-        <TouchableOpacity
+        <View
             key={`${examType}_${subject.subject}`}
             style={styles.subjectCard}
-            onPress={() => handleSubjectPress(subject, examType)}
+
         >
             <View style={styles.subjectHeader}>
                 <Text style={styles.subjectTitle}>{subject.subject}</Text>
@@ -144,11 +147,15 @@ const SubjectSelectionScreen = () => {
             {subject.courseName && (
                 <Text style={styles.courseText}>Course: {subject.courseName}</Text>
             )}
+            <TouchableOpacity
+                onPress={() => handleSubjectPress(subject, examType)}
+            >
+                <View style={styles.viewButton}>
+                    <Text style={styles.viewButtonText}>View Chapters</Text>
+                </View>
+            </TouchableOpacity>
 
-            <View style={styles.viewButton}>
-                <Text style={styles.viewButtonText}>View Chapters</Text>
-            </View>
-        </TouchableOpacity>
+        </View>
     ), [quizType, handleSubjectPress]);
 
     const renderExamGroup = useCallback((group: ExamTypeGroup) => (
@@ -163,112 +170,97 @@ const SubjectSelectionScreen = () => {
         </View>
     ), [renderSubjectCard]);
 
-    const renderContent = useMemo(() => {
-        if (error) {
-            return (
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorTitle}>⚠️ Unable to load subjects</Text>
-                    <Text style={styles.errorMessage}>{error}</Text>
-                    <TouchableOpacity
-                        style={styles.primaryButton}
-                        onPress={fetchSubjects}
-                    >
-                        <Text style={styles.buttonText}>Try Again</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
-        if (quizType === 'Mock Exam') {
-            return (
-                <View style={styles.messageContainer}>
-                    <Text style={styles.messageTitle}>📝 Mock Examinations</Text>
-                    <Text style={styles.messageText}>
-                        Mock examinations are available in the dedicated Mock Test section.
-                    </Text>
-                    <TouchableOpacity
-                        style={styles.primaryButton}
-                        onPress={() => router.push('/components/quizzes/QuizListScreen')}
-                    >
-                        <Text style={styles.buttonText}>Go to Mock Tests</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
-        if (examTypeGroups.length === 0) {
-            return (
-                <View style={styles.messageContainer}>
-                    <Text style={styles.messageTitle}>📚 No subjects available</Text>
-                    <Text style={styles.messageText}>
-                        No {quizType?.toLowerCase()} subjects found at the moment.
-                    </Text>
-                </View>
-            );
-        }
-
-        return (
-            <View style={styles.content}>
-                {examTypeGroups.map(renderExamGroup)}
-            </View>
-        );
-    }, [error, quizType, examTypeGroups, fetchSubjects, renderExamGroup, router]);
-
     if (loading) {
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+                    </TouchableOpacity>
                     <Text style={styles.headerTitle}>{screenTitle}</Text>
                 </View>
                 <ScrollView style={styles.content}>
-                    <ResponsiveSkeleton />
+                    <ResponsiveGridSkeleton />
                 </ScrollView>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{screenTitle}</Text>
-            </View>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>{screenTitle}</Text>
+                </View>
 
-            <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-                {renderContent}
-            </ScrollView>
-        </View>
+                <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+                    {error ? (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorTitle}>⚠️ Unable to load subjects</Text>
+                            <Text style={styles.errorMessage}>{error}</Text>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={fetchSubjects}
+                            >
+                                <Text style={styles.buttonText}>Try Again</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : quizType === 'Mock Exam' ? (
+                        <View style={styles.messageContainer}>
+                            <Text style={styles.messageTitle}>📝 Mock Examinations</Text>
+                            <Text style={styles.messageText}>
+                                Mock examinations are available in the dedicated Mock Test section.
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.primaryButton}
+                                onPress={() => router.push('/components/quizzes/QuizListScreen')}
+                            >
+                                <Text style={styles.buttonText}>Go to Mock Tests</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : examTypeGroups.length === 0 ? (
+                        <View style={styles.messageContainer}>
+                            <Text style={styles.messageTitle}>📚 No subjects available</Text>
+                            <Text style={styles.messageText}>
+                                No {quizType?.toLowerCase()} subjects found at the moment.
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.content}>
+                            {examTypeGroups.map(renderExamGroup)}
+                        </View>
+                    )}
+                </ScrollView>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F3F4F6',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        paddingTop: 48, // SafeArea padding
         backgroundColor: '#ffffff',
         borderBottomWidth: 1,
         borderBottomColor: '#f3f4f6',
     },
     backButton: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: '#f3f4f6',
-  marginRight: 12,
-  justifyContent: 'center',
-  alignItems: 'center', // Center icon horizontally
-},
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f3f4f6',
+        marginRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center', // Center icon horizontally
+    },
     headerTitle: {
         fontSize: 20,
         fontWeight: '600',
@@ -341,16 +333,16 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     viewButton: {
-        alignSelf: 'flex-start',
-        paddingVertical: 10,
+        alignItems: 'center', paddingVertical: 10,
         paddingHorizontal: 18,
-        backgroundColor: '#f3f4f6',
+        marginTop:7,
+        backgroundColor: '#4F46E5',
         borderRadius: 8,
     },
     viewButtonText: {
         fontSize: 15,
         fontWeight: '500',
-        color: '#4F46E5',
+        color: '#ffffff',
     },
     errorContainer: {
         flex: 1,
@@ -404,3 +396,5 @@ const styles = StyleSheet.create({
 });
 
 export default SubjectSelectionScreen;
+
+

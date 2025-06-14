@@ -14,7 +14,6 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync('authToken');
-    console.log('Token:', token);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

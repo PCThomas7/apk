@@ -25,7 +25,6 @@ const courseServiceGet = {
   getDppQuizzes: async (quizType) => {
     try {
       const response = await api.get(`/course-quizzes/${quizType}`);
-      console.log("response for mockexams in service : ",response.data)
       return response.data;
     } catch (error) {
       console.error('Error fetching DPP quizzes:', error);
