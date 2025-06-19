@@ -165,18 +165,28 @@ export const selectChapterState = createSelector(
   })
 );
 
-export const isChapterCacheValid = createSelector(
-  [
-    selectChapterCache,
-    (_: any, key: string) => key,
-    (_: any, _key: string, expiry: number) => expiry,
-    (_: any, _key: string, _expiry: number) => Date.now()
-  ],
-  (cache, key, expiry, currentTime) => {
-    const entry = cache[key];
-    return entry && !entry.isLoading && currentTime - entry.timestamp < expiry;
-  }
-);
+// export const isChapterCacheValid = createSelector(
+//   [
+//     selectChapterCache,
+//     (_: any, key: string) => key,
+//     (_: any, _key: string, expiry: number) => expiry,
+//     (_: any, _key: string, _expiry: number) => Date.now()
+//   ],
+//   (cache, key, expiry, currentTime) => {
+//     const entry = cache[key];
+//     return entry && !entry.isLoading && currentTime - entry.timestamp < expiry;
+//   }
+// );
+
+export const isChapterCacheValid = (
+  state: { chapters: ChapterState },
+  key: string,
+  expiry: number,
+  currentTime: number
+): boolean => {
+  const entry = state.chapters.cache[key];
+  return !!entry && !entry.isLoading && currentTime - entry.timestamp < expiry;
+};
 
 export const {
   fetchChaptersStart,

@@ -410,13 +410,13 @@ const QuizListScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const cachedQuizzes = useAppSelector((state) => 
-  selectQuizCache(state, quizType || '', subject, chapter, examType)
-);
+  const cachedQuizzes = useAppSelector((state) =>
+    selectQuizCache(state, quizType || '', subject, chapter, examType)
+  );
 
-const isCacheValid = useAppSelector((state) =>
-  selectIsCacheValid(state, quizType || '', CACHE_DURATION, subject, chapter, examType)
-);
+  const isCacheValid = useAppSelector((state) =>
+    selectIsCacheValid(state, quizType || '', CACHE_DURATION, subject, chapter, examType)
+  );
 
   const quizzes = useMemo(() => cachedQuizzes || [], [cachedQuizzes]);
 
@@ -481,7 +481,10 @@ const isCacheValid = useAppSelector((state) =>
   }, [isCacheValid, loading, fetchQuizzes]);
 
   const handleTakeQuiz = useCallback((contentId: string) => {
-    // router.push(`/student/quizzes/take/${contentId}`);
+    router.push({
+      pathname: '/components/quizzes/QuizAttemptScreen',
+      params: { contentId: contentId },
+    });
   }, [router]);
 
   const handleBack = useCallback(() => {
@@ -490,10 +493,8 @@ const isCacheValid = useAppSelector((state) =>
 
   const renderQuizCard = useCallback((quiz: Quiz) => (
     <View key={quiz._id}>
-      <TouchableOpacity
+      <View
         style={styles.quizCard}
-        onPress={() => handleTakeQuiz(quiz.content)}
-        activeOpacity={0.9}
       >
         <View style={styles.cardHeader}>
           <View style={styles.titleRow}>
@@ -515,10 +516,14 @@ const isCacheValid = useAppSelector((state) =>
           )}
         </View>
 
-        <View style={styles.startButton}>
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={() => handleTakeQuiz(quiz.content)}
+          activeOpacity={0.9}
+        >
           <Text style={styles.startButtonText}>Start Quiz</Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     </View>
   ), [handleTakeQuiz]);
 
@@ -556,7 +561,7 @@ const isCacheValid = useAppSelector((state) =>
 
   if (loading && quizzes.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: 25 }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={22} color="#4F46E5" />
@@ -608,7 +613,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb'
   },
   backButton: {
-    marginRight: 16
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center', // Center icon horizontally
   },
   headerTitle: {
     fontSize: 20,

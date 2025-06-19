@@ -170,7 +170,7 @@
 // });
 
 
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -181,6 +181,7 @@ import {
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import * as SecureStore from 'expo-secure-store';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useNavigation } from '@react-navigation/native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -192,6 +193,23 @@ export default function AuthScreen() {
   const colorScheme = useColorScheme();
   const [isLogin, setIsLogin] = useState(true);
   const navigation = useNavigation();
+
+  //to stick the AuthScreen without landscape
+  useEffect(() => {
+    // Lock orientation to portrait when this screen mounts
+    const lockToPortrait = async () => {
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP
+      );
+    };
+
+    lockToPortrait();
+
+    // Optional: restore to default on unmount
+    return () => {
+      ScreenOrientation.unlockAsync(); // or re-lock to desired default
+    };
+  }, []);
 
   const handleSwitch = () => {
     setIsLogin(prev => !prev);

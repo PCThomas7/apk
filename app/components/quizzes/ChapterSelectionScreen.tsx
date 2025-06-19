@@ -44,10 +44,15 @@ const ChapterSelectionScreen = () => {
     }
   }, [quizType]);
 
-   const chapters = useAppSelector((state) => selectChapters(state, key));
+  const chapters = useAppSelector((state) => selectChapters(state, key));
   const chapterState = useAppSelector((state) => selectChapterState(state, key));
-  const cacheValid = useAppSelector((state) => 
-    isChapterCacheValid(state, key, CACHE_EXPIRY)
+  // const cacheValid = useAppSelector((state) => 
+  //   isChapterCacheValid(state, key, CACHE_EXPIRY)
+  // );
+
+  const currentTime = Date.now(); // ⏱️ Get it outside
+  const cacheValid = useAppSelector((state) =>
+    isChapterCacheValid(state, key, CACHE_EXPIRY, currentTime)
   );
 
   const { isLoading, error } = chapterState;
@@ -65,8 +70,6 @@ const ChapterSelectionScreen = () => {
           id: `${key}_${index}`,
           name: item.chapter || `Chapter ${index + 1}`,
         }));
-
-        console.log('Formatted Chapters:', formattedChapters); // Debug log
         dispatch(fetchChaptersSuccess({ key, data: formattedChapters }));
       } catch (err) {
         console.error('Fetch error:', err); // Debug log
@@ -92,7 +95,7 @@ const ChapterSelectionScreen = () => {
 
   if (isLoading && chapters.length === 0) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: 30 }]}>
         <View style={styles.header}>
           <Text style={styles.headerText}>{subject}</Text>
           <Text style={styles.subHeaderText}>Select a chapter to begin</Text>

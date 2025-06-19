@@ -60,7 +60,18 @@ const courseServiceGet = {
       console.error('Error fetching filtered DPP quizzes:', error);
       throw error;
     }
+  },
+
+  getQuiz: async (quizId) => {
+    try {
+      const response = await api.get(`/quizzes/${quizId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quiz:', error);
+      throw error; // Re-throw to let the caller handle it
+    }
   }
-  
+
+
 }
 export default courseServiceGet;

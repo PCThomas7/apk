@@ -172,7 +172,7 @@ const SubjectSelectionScreen = () => {
 
     if (loading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { paddingTop: 30 }]}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={22} color="#4F46E5" />

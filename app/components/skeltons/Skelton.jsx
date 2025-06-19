@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 40,
+    paddingTop:30,
   },
   landscapeContainer: {
     paddingHorizontal: 30,

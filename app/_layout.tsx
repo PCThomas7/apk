@@ -124,7 +124,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 } }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 } , animation: 'none' }}>
           {isLoggedIn ? (
             <Stack.Screen name="(tabs)" />
           ) : (
