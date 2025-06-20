@@ -597,7 +597,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
                 styles.versionText,
                 { color: isDark ? '#666' : '#999' }
               ]}>
-                v1.0.0
+                v1.28.05.03
               </Text>
             </View>
           </Animated.View>

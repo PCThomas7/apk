@@ -34,7 +34,7 @@ const KatexRendered: React.FC<KatexRenderedProps> = ({
         <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
         <style>
           body { margin: 0; padding: 0; font-size: 16px; }
-          .katex { font-size: 1.15em; font-weight: 500; }
+          .katex { font-size: 1.15em; font-weight: 00; }
           .katex-display { font-size: 1.2em; font-weight: 500; }
         </style>
       </head>
@@ -70,7 +70,7 @@ const KatexRendered: React.FC<KatexRenderedProps> = ({
         originWhitelist={['*']}
         source={{ html }}
         scrollEnabled={false}
-        style={{ flex: 1, backgroundColor: 'transparent' }}
+        style={{ flex: 1, backgroundColor: 'transparent', }}
         javaScriptEnabled
         onMessage={(event) => {
           const height = parseInt(event.nativeEvent.data);

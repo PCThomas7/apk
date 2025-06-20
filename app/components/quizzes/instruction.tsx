@@ -46,6 +46,14 @@ const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
                         : 'not specified'}.
                 </Text>
                 <Text style={styles.text}>
+                    • There are{' '}
+                    {typeof questionsCount === 'number'
+                        ? `${questionsCount} question${questionsCount !== 1 ? 's' : ''}`
+                        : 'multiple questions'} in this quiz,try to attempt all.
+                </Text>
+
+
+                <Text style={styles.text}>
                     • The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available. When the timer reaches zero, the examination will end by itself.
                 </Text>
                 <Text style={styles.text}>• The Questions Palette will show the status of each question using symbols:</Text>
@@ -100,7 +108,7 @@ const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
             </View>
 
             <TouchableOpacity onPress={onStartQuiz}
-             disabled={!accepted} style={[styles.button, !accepted && styles.disabledButton]}>
+                disabled={!accepted} style={[styles.button, !accepted && styles.disabledButton]}>
                 <Text style={[styles.buttonText, !accepted && styles.disabledText]}>Proceed</Text>
             </TouchableOpacity>
         </ScrollView>
@@ -168,6 +176,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 8,
+        paddingHorizontal: 5
     },
     icon: {
         width: 20,
