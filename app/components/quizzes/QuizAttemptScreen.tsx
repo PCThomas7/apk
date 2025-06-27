@@ -179,7 +179,7 @@ const QuizAttemptScreen: React.FC = () => {
           onStartQuiz={handleStartQuiz}
         />
       ) : (
-        <QuizParticipationScreen />
+        <QuizParticipationScreen/>
       )}
     </SafeAreaView>
   );

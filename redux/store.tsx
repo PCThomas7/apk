@@ -20,6 +20,8 @@ import subjectReducer from './slices/subjectSlice';
 import chapterReducer from './slices/chapterSlice';
 import quizReducer from './slices/quizSlice';
 import quiz from './slices/quizAttemptSlice'
+import { solutionReducer } from './slices/quizAttemptSlice';
+import courseReducer from './slices/courseSlice';
 
 export const store = configureStore({
   reducer: {
@@ -27,6 +29,8 @@ export const store = configureStore({
     chapters: chapterReducer,
     quizzes: quizReducer,
     quiz: quiz,
+    solution: solutionReducer,
+    courses: courseReducer,
   },
 });
 

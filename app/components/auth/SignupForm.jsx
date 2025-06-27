@@ -380,7 +380,7 @@ const handleSignup = async () => {
   setIsLoading(true);
 
   try {
-    const res = await axios.post("http://192.168.10.50:5000/api/auth/register", {
+    const res = await axios.post("http://192.168.10.42:5000/api/auth/register", {
       name: formData.name,
       email: formData.email,
       password: formData.password,

@@ -18,6 +18,7 @@ import {
   navigateToQuestion,
   updateTimeRemaining,
   submitQuiz,
+  submitQuizThunk,
   clearResponse
 } from '../../../redux/slices/quizAttemptSlice';
 import { Picker } from '@react-native-picker/picker';
@@ -27,6 +28,7 @@ import { Platform } from 'react-native';
 import { TouchableWithoutFeedback } from 'react-native';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+
 
 
 const QuizParticipationScreen: React.FC = () => {
@@ -59,6 +61,8 @@ const QuizParticipationScreen: React.FC = () => {
     );
   }
 
+
+
   // Timer implementation
   useEffect(() => {
     if (currentQuiz.attempt.timeRemaining > 0 && !currentQuiz.attempt.submitted) {
@@ -74,17 +78,31 @@ const QuizParticipationScreen: React.FC = () => {
 
   // Auto submit when time runs out
   useEffect(() => {
-    if (currentQuiz.attempt.timeRemaining <= 0 && !currentQuiz.attempt.submitted) {
-      dispatch(submitQuiz());
-    }
-  }, [currentQuiz.attempt.timeRemaining, currentQuiz.attempt.submitted, dispatch]);
+    const submitIfTimeUp = async () => {
+      if (
+        currentQuiz.attempt.timeRemaining <= 0 &&
+        !currentQuiz.attempt.submitted
+      ) {
+        dispatch(submitQuiz());
+        await handleThunkAndNavigate(submitQuizThunk, '/components/quizzes/QuizReport');
+      }
+    };
+
+    submitIfTimeUp();
+  }, [
+    currentQuiz.attempt.timeRemaining,
+    currentQuiz.attempt.submitted,
+    dispatch,
+  ]);
+
 
   const currentSection = currentQuiz.sections[currentQuiz.attempt.currentSectionIndex];
   const currentQuestion = currentSection.questions[currentQuiz.attempt.currentQuestionIndex];
-  // console.log("current Question : ",currentQuestion)
   const selectedOption = currentQuiz.attempt.answers[currentQuestion.id] || null;
   const isMarkedForReview = currentQuiz.attempt.markedForReview[currentQuestion.id] || false;
-
+  // useEffect(() => {
+  //   console.log("current Question options:", currentQuestion.options);
+  // }, [currentQuestion]);
   // Navigation state calculations
   const isFirstQuestionInSection = currentQuiz.attempt.currentQuestionIndex === 0;
   const isLastQuestionInSection = currentQuiz.attempt.currentQuestionIndex === currentSection.questions.length - 1;
@@ -128,7 +146,7 @@ const QuizParticipationScreen: React.FC = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLastQuestionInSection && !isLastSection) {
       // Go to first question of next section
       dispatch(navigateToQuestion({
@@ -144,8 +162,57 @@ const QuizParticipationScreen: React.FC = () => {
     } else if (isLastQuestionOfQuiz) {
       // Submit if it's the last question of the quiz
       dispatch(submitQuiz());
+      await handleThunkAndNavigate(submitQuizThunk, '/components/quizzes/QuizReport');
     }
   };
+
+  const handleThunkAndNavigate = async (
+    thunk: any,
+    route: string // stays as string, but see cast below
+  ) => {
+    const result = await dispatch(thunk());
+
+    if (thunk.fulfilled.match(result)) {
+      router.replace(route as any); // 👈 Fix TS error by casting if needed
+    } else {
+      console.error('Action failed:', result.payload);
+    }
+  };
+
+// use to overcome math expressions aren't displaying correctly (showing just parts like \(0, instead of the full expressions)
+// const renderOptionContent = (optionText: string) => {
+//     if (optionText.startsWith('http')) {
+//         return (
+//             <Image
+//                 source={{ uri: optionText }}
+//                 style={[styles.optionImage, { width: windowWidth - 100, height: 200 }]}
+//                 resizeMode="contain"
+//             />
+//         );
+//     }
+    
+//     // First, clean up the option text
+//     const cleanedText = optionText
+//         .replace(/\\\\/g, '') // Remove line breaks for math display
+//         .trim();
+    
+//     // Check if it's a math expression (contains $ or LaTeX commands)
+//     if (cleanedText.includes('$') || cleanedText.includes('\\')) {
+//         // For options that are purely math (wrapped in $)
+//         if (/^\$.*\$$/.test(cleanedText)) {
+//             return <KatexRenderer content={cleanedText.slice(1, -1)} displayMode={false} style={styles.mathView} />;
+//         }
+//         // For mixed content or LaTeX commands
+//         return <KatexRenderer content={cleanedText} displayMode={false} style={styles.mathView} />;
+//     }
+    
+//     // Regular text
+//     return (
+//         <Text style={[styles.optionText, selectedOption === optionText && styles.selectedOptionText]}>
+//             {optionText}
+//         </Text>
+//     );
+// };
 
   const renderOptionContent = (optionText: string) => {
     if (optionText.startsWith('http')) {
@@ -166,6 +233,11 @@ const QuizParticipationScreen: React.FC = () => {
     );
   };
 
+  const handleSubmit = async () => {
+    dispatch(submitQuiz()); // Optional, if needed before thunk
+    await handleThunkAndNavigate(submitQuizThunk, '/components/quizzes/QuizReport');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
@@ -173,7 +245,7 @@ const QuizParticipationScreen: React.FC = () => {
 
         <TouchableOpacity
           style={[styles.submitButton, currentQuiz.attempt.submitted && styles.submittedButton]}
-          onPress={() => dispatch(submitQuiz())}
+          onPress={() => handleSubmit()}
           disabled={currentQuiz.attempt.submitted}
         >
           <Text style={styles.submitButtonText}>
@@ -269,20 +341,37 @@ const QuizParticipationScreen: React.FC = () => {
         {/* Question Text */}
         <View style={styles.questionTextContainer}>
           {currentQuestion.text.includes('$') || currentQuestion.text.includes('\\') ? (
-            <KatexRenderer
-              key={currentQuestion.id} // ensures WebView remounts for every question
-              content={currentQuestion.text}
-              style={[styles.mathView, { height: questionHeights[currentQuestion.id] || 1 }]}
-              onHeightMeasured={(height) => {
-                setQuestionHeights((prev) => ({
-                  ...prev,
-                  [currentQuestion.id]: height,
-                }));
+            <View
+              style={{ minHeight: 1 }}
+              onLayout={(event) => {
+                const { height } = event.nativeEvent.layout;
+                const currentHeight = questionHeights[currentQuestion.id] || 0;
+
+                // Apply only if significantly different (to prevent jitter)
+                if (Math.abs(currentHeight - height) > 2) {
+                  setQuestionHeights((prev) => ({
+                    ...prev,
+                    [currentQuestion.id]: height,
+                  }));
+                }
               }}
-            />
+            >
+              <KatexRenderer
+                key={currentQuestion.id}
+                content={currentQuestion.text}
+                style={styles.mathView}
+              />
+            </View>
 
           ) : (
             <Text style={styles.questionText}>{currentQuestion.text}</Text>
+          )}
+          {currentQuestion?.imageUrl && (
+            <Image
+              source={{ uri: currentQuestion.imageUrl }}
+              style={styles.questionImage}
+              resizeMode="contain"
+            />
           )}
         </View>
 
@@ -375,7 +464,7 @@ const QuizParticipationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   container: {
     flex: 1,
@@ -545,6 +634,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
     fontSize: 14,
   },
+  questionImage: { width: '100%', height: 200, marginTop: 12, borderRadius: 4 },
   negativeMarksText: {
     color: '#F44336',
     fontSize: 14,
@@ -568,7 +658,7 @@ const styles = StyleSheet.create({
   optionButton: {
     padding: 16,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgb(250, 250, 249)',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',

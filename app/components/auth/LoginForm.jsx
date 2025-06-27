@@ -61,7 +61,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
     console.log("email : ", formData.password)
 
     try {
-      const res = await axios.post("http://192.168.10.50:5000/api/auth/login", {
+      const res = await axios.post("https://backend.professorpcthomas.com/api/auth/login", {
         email: formData.email,
         password: formData.password,
       });
