@@ -29,8 +29,6 @@ import { TouchableWithoutFeedback } from 'react-native';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-
-
 const QuizParticipationScreen: React.FC = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -60,8 +58,6 @@ const QuizParticipationScreen: React.FC = () => {
       </View>
     );
   }
-
-
 
   // Timer implementation
   useEffect(() => {
@@ -178,41 +174,6 @@ const QuizParticipationScreen: React.FC = () => {
       console.error('Action failed:', result.payload);
     }
   };
-
-// use to overcome math expressions aren't displaying correctly (showing just parts like \(0, instead of the full expressions)
-// const renderOptionContent = (optionText: string) => {
-//     if (optionText.startsWith('http')) {
-//         return (
-//             <Image
-//                 source={{ uri: optionText }}
-//                 style={[styles.optionImage, { width: windowWidth - 100, height: 200 }]}
-//                 resizeMode="contain"
-//             />
-//         );
-//     }
-    
-//     // First, clean up the option text
-//     const cleanedText = optionText
-//         .replace(/\\\\/g, '') // Remove line breaks for math display
-//         .trim();
-    
-//     // Check if it's a math expression (contains $ or LaTeX commands)
-//     if (cleanedText.includes('$') || cleanedText.includes('\\')) {
-//         // For options that are purely math (wrapped in $)
-//         if (/^\$.*\$$/.test(cleanedText)) {
-//             return <KatexRenderer content={cleanedText.slice(1, -1)} displayMode={false} style={styles.mathView} />;
-//         }
-//         // For mixed content or LaTeX commands
-//         return <KatexRenderer content={cleanedText} displayMode={false} style={styles.mathView} />;
-//     }
-    
-//     // Regular text
-//     return (
-//         <Text style={[styles.optionText, selectedOption === optionText && styles.selectedOptionText]}>
-//             {optionText}
-//         </Text>
-//     );
-// };
 
   const renderOptionContent = (optionText: string) => {
     if (optionText.startsWith('http')) {
@@ -789,4 +750,106 @@ const styles = StyleSheet.create({
 });
 
 export default QuizParticipationScreen;
+
+
+
+// use to overcome math expressions aren't displaying correctly (showing just parts like \(0, instead of the full expressions)
+// const renderOptionContent = (optionText: string) => {
+//     if (optionText.startsWith('http')) {
+//         return (
+//             <Image
+//                 source={{ uri: optionText }}
+//                 style={[styles.optionImage, { width: windowWidth - 100, height: 200 }]}
+//                 resizeMode="contain"
+//             />
+//         );
+//     }
+    
+//     // First, clean up the option text
+//     const cleanedText = optionText
+//         .replace(/\\\\/g, '') // Remove line breaks for math display
+//         .trim();
+    
+//     // Check if it's a math expression (contains $ or LaTeX commands)
+//     if (cleanedText.includes('$') || cleanedText.includes('\\')) {
+//         // For options that are purely math (wrapped in $)
+//         if (/^\$.*\$$/.test(cleanedText)) {
+//             return <KatexRenderer content={cleanedText.slice(1, -1)} displayMode={false} style={styles.mathView} />;
+//         }
+//         // For mixed content or LaTeX commands
+//         return <KatexRenderer content={cleanedText} displayMode={false} style={styles.mathView} />;
+//     }
+    
+//     // Regular text
+//     return (
+//         <Text style={[styles.optionText, selectedOption === optionText && styles.selectedOptionText]}>
+//             {optionText}
+//         </Text>
+//     );
+// };
+
+// use this if needs timer proper in background and minimize
+// import { AppState } from 'react-native';
+// const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+// const backgroundStartTime = useRef<number | null>(null);
+
+// // Timer implementation
+// useEffect(() => {
+//   const handleAppStateChange = (nextAppState: string) => {
+//     if (nextAppState === 'background') {
+//       backgroundStartTime.current = Date.now();
+//       if (timerRef.current) {
+//         clearInterval(timerRef.current);
+//         timerRef.current = null;
+//       }
+//     } else if (nextAppState === 'active' && backgroundStartTime.current) {
+//       const secondsInBackground = Math.floor(
+//         (Date.now() - backgroundStartTime.current) / 1000
+//       );
+//       if (secondsInBackground > 0) {
+//         dispatch(updateTimeRemaining(secondsInBackground)); // With payload
+//       }
+//       backgroundStartTime.current = null;
+
+//       if (!timerRef.current && currentQuiz.attempt.timeRemaining > 0 && !currentQuiz.attempt.submitted) {
+//         timerRef.current = setInterval(() => {
+//           dispatch(updateTimeRemaining()); // Without payload (will use default 1)
+//         }, 1000);
+//       }
+//     }
+//   };
+
+//   const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+//   if (currentQuiz.attempt.timeRemaining > 0 && !currentQuiz.attempt.submitted) {
+//     timerRef.current = setInterval(() => {
+//       dispatch(updateTimeRemaining()); // Without payload
+//     }, 1000);
+//   }
+
+//   return () => {
+//     if (timerRef.current) clearInterval(timerRef.current);
+//     subscription.remove();
+//   };
+// }, [currentQuiz.attempt.timeRemaining, currentQuiz.attempt.submitted, dispatch]);
+
+// // Auto submit when time runs out (unchanged)
+// useEffect(() => {
+//   const submitIfTimeUp = async () => {
+//     if (currentQuiz.attempt.timeRemaining <= 0 && !currentQuiz.attempt.submitted) {
+//       if (timerRef.current) {
+//         clearInterval(timerRef.current);
+//         timerRef.current = null;
+//       }
+//       dispatch(submitQuiz());
+//       await handleThunkAndNavigate(submitQuizThunk, '/components/quizzes/QuizReport');
+//     }
+//   };
+//   submitIfTimeUp();
+// }, [currentQuiz.attempt.timeRemaining, currentQuiz.attempt.submitted, dispatch]);
+
+// <Text style={styles.timer}>
+//   {Math.floor(currentQuiz.attempt.timeRemaining / 60)}:
+//   {(currentQuiz.attempt.timeRemaining % 60).toString().padStart(2, '0')}
+// </Text>
 

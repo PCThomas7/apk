@@ -14,7 +14,8 @@ import { fetchCourses } from '../../redux/slices/courseSlice';
 import { RootState, AppDispatch } from '../../redux/store';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // Add this import at the top
+import { useRouter } from 'expo-router';
+import { setActiveCourse } from '@/redux/slices/activeCourseSlice';
 
 interface Course {
   id: string;
@@ -60,6 +61,7 @@ const Courses = () => {
         activeOpacity={0.7}
         style={[styles.card, { width: cardWidth }]}
         onPress={() => {
+          dispatch(setActiveCourse(item));
           if (item.isEnrolled) {
             router.push(`/components/courses/enrolledCourseSection?courseId=${item.id}`);
           } else {

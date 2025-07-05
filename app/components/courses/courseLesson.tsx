@@ -8,7 +8,7 @@ import courseServiceGet from '@/services/courseServiceGet';
 
 const CourseLesson = () => {
     const router = useRouter();
-    const { chapterId } = useLocalSearchParams<{ chapterId: string }>();
+    const { chapterId, courseId, sectionId } = useLocalSearchParams<{ chapterId: string, courseId: string, sectionId: string }>();
     const [lessons, setLessons] = useState<any[]>([]);
     const [progressData, setProgressData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -39,6 +39,7 @@ const CourseLesson = () => {
     const getProgressForLesson = (lessonId: string) => {
         return progressData.find((p: any) => p.lessonId === lessonId);
     };
+
 
     // Helper to get percentage
     const getPercentage = (progress: any) => {
@@ -139,6 +140,7 @@ const CourseLesson = () => {
                     <FlatList
                         data={lessons}
                         keyExtractor={item => item._id || item.id}
+                        showsVerticalScrollIndicator={false}
                         renderItem={({ item }) => {
                             const progress = getProgressForLesson(item._id || item.id);
                             const percentage = getPercentage(progress);
@@ -162,17 +164,19 @@ const CourseLesson = () => {
                             const handleLessonPress = () => {
                                 if (item.type === 'video') {
                                     router.push(
-                                        `/components/courses/vedioPlayer?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&is_bookmarked=${progress?.bookmarked ?? false}`
+                                        `/components/courses/videoPlayer?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
                                     );
                                 }
-                                // You can add handling for other types if needed
+                                else if (item.type === 'quiz') {
+                                    router.push(`/components/quizzes/QuizLessonScreen?lessonId=${item._id}&contentId=${item.content}`);
+                                }
                             };
 
                             return (
                                 <TouchableOpacity
                                     activeOpacity={0.8}
                                     onPress={handleLessonPress}
-                                    disabled={item.type !== 'video'}
+                                    disabled={item.type !== 'video' && item.type !== 'quiz'}
                                     style={{ opacity: item.type === 'video' ? 1 : 0.7 }}
                                 >
                                     <View style={styles.lessonCard}>
@@ -189,17 +193,22 @@ const CourseLesson = () => {
                                             </View>
                                             {getProgressBadge(progress)}
                                         </View>
-                                        <View style={styles.progressRow}>
-                                            <View style={styles.progressBarBackground}>
-                                                <View
-                                                    style={[
-                                                        styles.progressBarFill,
-                                                        { width: `${percentage}%`, backgroundColor: percentage === 100 ? '#22C55E' : '#6366F1' },
-                                                    ]}
-                                                />
+                                        {item.type === 'video' && (
+                                            <View style={styles.progressRow}>
+                                                <View style={styles.progressBarBackground}>
+                                                    <View
+                                                        style={[
+                                                            styles.progressBarFill,
+                                                            {
+                                                                width: `${percentage}%`,
+                                                                backgroundColor: percentage === 100 ? '#22C55E' : '#6366F1'
+                                                            },
+                                                        ]}
+                                                    />
+                                                </View>
+                                                <Text style={styles.percentText}>{percentage}%</Text>
                                             </View>
-                                            <Text style={styles.percentText}>{percentage}%</Text>
-                                        </View>
+                                        )}
                                     </View>
                                 </TouchableOpacity>
                             );

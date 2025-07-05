@@ -8,7 +8,7 @@ import ResponsiveGridSkeleton from '../skeltons/Skelton';
 
 const CourseChapters = () => {
   const router = useRouter();
-  const { sectionId } = useLocalSearchParams<{ sectionId: string }>();
+  const { sectionId , courseId } = useLocalSearchParams<{ sectionId: string , courseId:string}>();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +56,7 @@ const CourseChapters = () => {
               <TouchableOpacity
                 style={styles.chapterCard}
                 activeOpacity={0.7}
-                onPress={() => router.push(`/components/courses/courseLesson?chapterId=${item._id || item.id}`)}
+                onPress={() => router.push(`/components/courses/courseLesson?chapterId=${item._id || item.id}&courseId=${courseId}&sectionId${sectionId}`)}
               >
                 <View style={styles.chapterInfo}>
                   <Text style={styles.chapterTitle}>

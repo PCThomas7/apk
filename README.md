@@ -49,7 +49,18 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
+Best Solution: Expo Push Notifications + Periodic Sync
+Why This is the Best Approach:
+Works offline: Notifications are delivered when device reconnects
 
+App closed/minimized: Handled by OS-level push service
+
+Reliable delivery: Managed by Expo's infrastructure
+
+Low battery impact: No constant connection needed
+
+Alternative Pure React Native Solution (Without Expo)
+If you can't use Expo, use react-native-push-notification with FCM/APNs:
 
 {
   "expo": {

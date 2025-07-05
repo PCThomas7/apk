@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vidstack Player</title>
+  <!-- Import Vidstack styles for default layout -->
+  <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
+  <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
+  <!-- Import Vidstack player elements -->
+  <script src="https://cdn.vidstack.io/player" type="module"></script>
+  <style>
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    media-player {
+      width: 100%;
+      flex: 1;
+      --media-brand: #4c9aff;
+      --media-focus-ring-color: #4c9aff;
+    }
+
+    .player-title {
+      color: white;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 14px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+    }
+
+    .loading-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 4px;
+      z-index: 5;
+    }
+
+    /* Enhance fullscreen button styling */
+    media-fullscreen-button {
+      --media-focus-ring: 2px solid rgb(78, 156, 246);
+      margin-right: 5px;
+    }
+
+    /* Fix positioning in fullscreen mode */
+    :fullscreen media-player,
+    :-webkit-full-screen media-player,
+    :-ms-fullscreen media-player,
+    :fullscreen .container,
+    :-webkit-full-screen .container,
+    :-ms-fullscreen .container {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000;
+    }
+
+    /* Hide the title in fullscreen mode */
+    :fullscreen .player-title,
+    :-webkit-full-screen .player-title,
+    :-ms-fullscreen .player-title {
+      display: none;
+    }
+
+    /* Ensure controls are visible when hovering in fullscreen */
+    :fullscreen media-controls,
+    :-webkit-full-screen media-controls,
+    :-ms-fullscreen media-controls {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="player-title" class="player-title"></div>
+    <media-player id="media-player" crossorigin playsinline muted autoplay>
+      <media-provider></media-provider>
+      <media-video-layout thumbnails="">
+        <!-- Explicit customization for the controls -->
+        <template slot="bottom-controls">
+          <media-control-bar>
+            <media-play-button></media-play-button>
+            <media-mute-button></media-mute-button>
+            <media-volume-slider></media-volume-slider>
+            <media-time-display></media-time-display>
+            <media-time-slider></media-time-slider>
+            <media-playback-rate-button></media-playback-rate-button>
+            <media-fullscreen-button></media-fullscreen-button>
+          </media-control-bar>
+        </template>
+      </media-video-layout>
+    </media-player>
+  </div>
+
+  <script>
+    // Function to get URL parameters
+    function getParameterByName(name) {
+      const url = window.location.href;
+      name = name.replace(/[\[\]]/g, '\\$&');
+      const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+      const results = regex.exec(url);
+      if (!results) return null;
+      if (!results[2]) return '';
+      return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+
+    // Get video source and title from URL parameters
+    const videoSrc = getParameterByName('src') || 'youtube/_cMxraX_5RE';
+    // Set video source and title
+    document.addEventListener('DOMContentLoaded', () => {
+      const player = document.getElementById('media-player');
+      const titleElement = document.getElementById('player-title');
+      const loadingElement = document.getElementById('loading');
+
+      // For throttling time updates
+      let lastTimeUpdate = 0;
+      const TIME_UPDATE_THROTTLE = 250; // ms between updates
+
+      // Set source
+      player.src = videoSrc;
+
+      // Listen for player events
+      player.addEventListener('provider-change', () => {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('PLAYER_READY');
+        }
+        loadingElement.style.display = 'none';
+      });
+
+      player.addEventListener('can-play', () => {
+        if (typeof startTime === 'number' && startTime > 0) {
+          // Seek to the provided startTime value
+          player.currentTime = startTime;
+        }
+        // Notify React Native
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('CAN_PLAY');
+        }
+        loadingElement.style.display = 'none';
+      });
+
+
+      player.addEventListener('play', () => {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('PLAYING');
+        }
+        loadingElement.style.display = 'none';
+      });
+
+      player.addEventListener('pause', () => {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('PAUSED');
+        }
+      });
+
+      player.addEventListener('error', (e) => {
+        console.error('Player error:', e);
+        loadingElement.textContent = 'Error loading video';
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('ERROR');
+        }
+      });
+
+      // Send time updates to React Native - throttled to prevent excessive updates
+      player.addEventListener('time-update', () => {
+        const now = Date.now();
+        if (now - lastTimeUpdate > TIME_UPDATE_THROTTLE) {
+          lastTimeUpdate = now;
+
+          if (window.ReactNativeWebView) {
+            const timeData = {
+              currentTime: player.currentTime,
+              duration: player.duration
+            };
+            window.ReactNativeWebView.postMessage('TIME_UPDATE:' + JSON.stringify(timeData));
+          }
+        }
+      });
+
+      // Also send duration once it's available
+      player.addEventListener('duration-change', () => {
+        if (window.ReactNativeWebView && player.duration) {
+          const timeData = {
+            currentTime: player.currentTime,
+            duration: player.duration
+          };
+          window.ReactNativeWebView.postMessage('TIME_UPDATE:' + JSON.stringify(timeData));
+        }
+      });
+
+      // Enhanced fullscreen handling
+      player.addEventListener('fullscreen-change', (event) => {
+        const isFullscreen = event.detail;
+        console.log('Fullscreen changed:', isFullscreen);
+
+        // Notify React Native about fullscreen state changes
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(isFullscreen ? 'ENTERED_FULLSCREEN' : 'EXITED_FULLSCREEN');
+        }
+
+        // Additional handling for mobile fullscreen
+        if (isFullscreen) {
+          // Force landscape orientation hint for mobile browsers
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(err => console.warn('Unable to lock orientation:', err));
+          }
+        } else {
+          // Unlock orientation when exiting fullscreen
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock().catch(err => console.warn('Unable to unlock orientation:', err));
+          }
+        }
+      });
+
+      // Add a custom fullscreen button click handler for iOS compatibility
+      const fullscreenButton = document.querySelector('media-fullscreen-button');
+      if (fullscreenButton) {
+        fullscreenButton.addEventListener('click', () => {
+          // iOS sometimes needs a bit of help with fullscreen
+          if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+            console.log('iOS device detected, sending additional fullscreen message');
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage('FULLSCREEN_BUTTON_CLICKED');
+            }
+          }
+        });
+      }
+
+      // Always mark as ready after a timeout
+      setTimeout(() => {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage('PLAYER_READY');
+        }
+        loadingElement.style.display = 'none';
+      }, 3000);
+
+      // Handle YouTube videos specifically
+      if (videoSrc.startsWith('youtube/')) {
+        // YouTube videos need special handling
+        console.log('Loading YouTube video:', videoSrc);
+
+        // Add a longer timeout for YouTube videos as they can take longer to load
+        setTimeout(() => {
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage('YOUTUBE_READY');
+          }
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+
+</html>

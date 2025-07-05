@@ -1069,7 +1069,21 @@ const quizSlice = createSlice({
       if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
         state.currentQuiz.attempt.timeRemaining -= 1;
       }
-    },
+    },// if it have timing issues in background or use below updateTimeRemaining
+    // updateTimeRemaining: {
+    //   reducer(state, action: PayloadAction<number | undefined>) {
+    //     const secondsElapsed = action.payload ?? 1; // Default to 1 if undefined
+    //     if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
+    //       state.currentQuiz.attempt.timeRemaining = Math.max(
+    //         0,
+    //         state.currentQuiz.attempt.timeRemaining - secondsElapsed
+    //       );
+    //     }
+    //   },
+    //   prepare(seconds?: number) {
+    //     return { payload: seconds };
+    //   }
+    // },
     submitQuiz(state) {
       if (state.currentQuiz) {
         state.currentQuiz.attempt.submitted = true;

@@ -22,6 +22,8 @@ import quizReducer from './slices/quizSlice';
 import quiz from './slices/quizAttemptSlice'
 import { solutionReducer } from './slices/quizAttemptSlice';
 import courseReducer from './slices/courseSlice';
+import activeCourseReducer from './slices/activeCourseSlice'
+import analyticsReducer from "./slices/analyticsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -31,6 +33,8 @@ export const store = configureStore({
     quiz: quiz,
     solution: solutionReducer,
     courses: courseReducer,
+    activeCourse:activeCourseReducer,
+    analytics:analyticsReducer,
   },
 });
 

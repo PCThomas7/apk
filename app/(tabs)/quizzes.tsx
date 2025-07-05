@@ -53,7 +53,6 @@ export default function QuizzScreen() {
     </ScrollView>
   );
 }
-
 const quizOptions = [
   { title: 'DPP Quizzes', description: 'Daily Practice Problems', color: '#2a9d8f', quizType: "DPP" },
   { title: 'Short Exam Quizzes', description: 'Quick assessments', color: '#e76f51', quizType: "Short Exam" },

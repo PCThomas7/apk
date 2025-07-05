@@ -11,6 +11,16 @@ const courseServiceGet = {
     }
   },
 
+  getEnrolledVideoLessons: async () => {
+    try {
+      const response = await api.get('/lessons/enrolled/videos');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching enrolled video lessons:', error);
+      throw error;
+    }
+  },
+
   getAverageScore: async (userId) => {
     try {
       const response = await api.get(`/analytics/${userId}`);
@@ -145,7 +155,7 @@ const courseServiceGet = {
       throw new Error(error.response?.data?.message || 'Failed to fetch section chapters');
     }
   },
-  
+
   getChapterLessons: async (chapterId) => {
     try {
       const response = await api.get(`/courses/v2/chapter/${chapterId}/lessons`);
@@ -161,6 +171,66 @@ const courseServiceGet = {
       return response.data;
     } catch (error) {
       console.error('Error fetching lessons progress:', error);
+      throw error;
+    }
+  },
+
+  toggleLessonBookmark: async (lessonId) => {
+    try {
+      const response = await api.post(`/progress/lesson/${lessonId}/bookmark`);
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling lesson bookmark:', error);
+      throw new Error('Failed to toggle lesson bookmark');
+    }
+  },
+
+  markLessonCompleted: async (lessonId, data) => {
+    try {
+      const response = await api.post(`/progress/lesson/${lessonId}/complete`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error);
+      throw new Error('Failed to mark lesson as completed');
+    }
+  },
+
+  updateLessonProgress: async (lessonId, progressData) => {
+    try {
+      const response = await api.post(`/progress/lesson/${lessonId}`, progressData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating lesson progress:', error);
+      throw new Error('Failed to update lesson progress');
+    }
+  },
+  
+  getUserAverageScore:async () => {
+    try {
+      const response = await api.get(`/student/analytics/averageScore`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching average score :', error);
+      throw new Error('Failed to fetch average score');
+    }
+  },
+
+  getLesson: async (lessonId) => {
+    try {
+      const response = await api.get(`/lessons/${lessonId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lesson:', error);
+      throw error;
+    }
+  },
+
+   getStudentAnalytics: async () => {
+    try {
+      const response = await api.get('/student/analytics');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student analytics:', error);
       throw error;
     }
   },
