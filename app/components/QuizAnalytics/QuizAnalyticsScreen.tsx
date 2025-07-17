@@ -1,61 +1,71 @@
-import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppDispatch } from '../../../redux/hooks';
-import { fetchStudentAnalytics } from '../../../redux/slices/analyticsSlice';
+import {
+  fetchQuizReport,
+  clearQuizReport,
+} from '../../../redux/slices/quizAnalyticsSlice';
 
+// Define type
 interface AnalyticsOption {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: string;
 }
 
+// Options
 const analyticsOptions: AnalyticsOption[] = [
-  { label: 'Overall Performance', icon: 'stats-chart', route: '/components/analytics/OverallPerformance' },
-  { label: 'Subject Analysis', icon: 'book', route: '/components/analytics/SubjectAnalysis' },
-  { label: 'Difficulty Analysis', icon: 'trending-up', route: '/components/analytics/DifficultyAnalysis' },
-  { label: 'Question Types', icon: 'help-circle', route: '/components/analytics/QuestionTypes' },
-  { label: 'Performance Trends', icon: 'analytics', route: '/components/analytics/PerformanceOverview' },
-  { label: 'Time Analysis', icon: 'time', route: '/components/analytics/TimeAnalysis' },
+  { label: 'Subject-Wise Analysis', icon: 'stats-chart', route: '/components/QuizAnalytics/QuizSubjectAnalytics' },
+  // { label: 'Difficulty-Wise Analysis', icon: 'trending-up', route: '/components/QuizAnalytics/DifficultyAnalytics' },
+  // { label: 'Question-Type Analysis', icon: 'book', route: '/components/QuizAnalytics/QuestiontypeAnalysis' },
+  { label: 'Difficulty-Wise Analysis', icon: 'trending-up', route: `/components/QuizAnalytics/DifficultyAnalytics?page=difficulty` },
+  { label: 'Question-Type Analysis', icon: 'book', route: `/components/QuizAnalytics/DifficultyAnalytics?page=questionType` },
 ];
 
-const AnalyticsList: React.FC = () => {
+const QuizAnalyticsScreen = () => {
   const router = useRouter();
+  const { quizId } = useLocalSearchParams();
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    dispatch(fetchStudentAnalytics());
-  }, [dispatch]);
+    if (typeof quizId === 'string') {
+      dispatch(fetchQuizReport(quizId));
+    }
 
-  const handlePress = (path: (typeof analyticsOptions)[number]['route']) => {
+    return () => {
+      dispatch(clearQuizReport());
+    };
+  }, [quizId]);
+
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  const handleOptionPress = (path: (typeof analyticsOptions)[number]['route']) => {
     router.push(path as any);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'right', 'left']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={router.back} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} color="#4F46E5" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analytics Dashboard</Text>
+        <Text style={styles.headerTitle}>Quiz Analytics</Text>
       </View>
 
+      {/* Scrollable Analytics Cards */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.buttonsContainer}>
           {analyticsOptions.map((option) => (
             <TouchableOpacity
               key={option.route}
               style={styles.card}
-              onPress={() => handlePress(option.route)}
+              onPress={() => handleOptionPress(option.route)}
               activeOpacity={0.85}
             >
               <View style={styles.cardContent}>
@@ -78,30 +88,28 @@ const AnalyticsList: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: '#e5e7eb',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#f3f4f6',
+    marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1f2937',
   },
   scrollContent: {
     padding: 16,
@@ -151,4 +159,9 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AnalyticsList;
+export default QuizAnalyticsScreen;
+
+
+
+
+

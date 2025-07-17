@@ -1,5 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native'; // Added Dimensions here
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,13 +15,40 @@ import { useAppSelector } from '../../../redux/hooks';
 import { selectDifficultyPerformance } from '../../../redux/slices/analyticsSlice';
 import { PieChart } from 'react-native-chart-kit';
 
+const screenWidth = Dimensions.get('window').width;
+
 const DifficultyAnalysis = () => {
   const router = useRouter();
   const difficultyData = useAppSelector(selectDifficultyPerformance);
+  const [selectedDifficulty, setSelectedDifficulty] = useState(difficultyData?.[0]?.difficulty || '');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  const handleBack = () => {
-    router.back();
+  const handleBack = () => router.back();
+
+  const toggleDropdown = () => {
+    Animated.timing(rotateAnim, {
+      toValue: dropdownOpen ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    setDropdownOpen(!dropdownOpen);
   };
+
+  const selectDifficulty = (difficulty: string) => {
+    setSelectedDifficulty(difficulty);
+    setDropdownOpen(false);
+    Animated.timing(rotateAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   if (!difficultyData || difficultyData.length === 0) {
     return (
@@ -31,27 +66,16 @@ const DifficultyAnalysis = () => {
     );
   }
 
-  // Prepare data for pie chart
-  const pieData = difficultyData.map(item => ({
-    name: item.difficulty,
-    value: item.totalQuestions,
-    color: getColorForDifficulty(item.difficulty),
-    legendFontColor: '#6B7280',
-    legendFontSize: 12
-  }));
+  const current = difficultyData.find(item => item.difficulty === selectedDifficulty) || difficultyData[0];
 
-  function getColorForDifficulty(difficulty: string) {
-    switch(difficulty.toLowerCase()) {
-      case 'easy': return '#10B981'; // Green
-      case 'medium': return '#F59E0B'; // Yellow
-      case 'hard': return '#EF4444'; // Red
-      default: return '#6B7280'; // Gray
-    }
-  }
+  const pieData = [
+    { name: 'Correct', value: current.correctAnswers, color: '#10B981' },
+    { name: 'Incorrect', value: current.incorrectAnswers, color: '#EF4444' },
+    { name: 'Unattempted', value: current.unattempted, color: '#6B7280' },
+  ];
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      {/* Header */}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} color="#4F46E5" />
@@ -59,46 +83,108 @@ const DifficultyAnalysis = () => {
         <Text style={styles.headerTitle}>Difficulty Analysis</Text>
       </View>
 
-      {/* Main Content */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Pie Chart - Question Distribution by Difficulty */}
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        {/* Dropdown Container */}
+        <View style={styles.dropdownContainer}>
+          <View style={styles.dropdownWrapper}>
+            <TouchableOpacity style={styles.dropdownHeader} onPress={toggleDropdown}>
+              <Text style={styles.dropdownHeaderText}>{selectedDifficulty}</Text>
+              <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {dropdownOpen && (
+              <View style={styles.dropdownListOverlay}>
+                <ScrollView style={styles.dropdownScroll}>
+                  {difficultyData.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.dropdownItem,
+                        selectedDifficulty === item.difficulty && styles.dropdownItemSelected,
+                      ]}
+                      onPress={() => selectDifficulty(item.difficulty)}
+                    >
+                      <Text style={styles.dropdownItemText}>{item.difficulty}</Text>
+                      {selectedDifficulty === item.difficulty && (
+                        <Ionicons name="checkmark" size={18} color="#4F46E5" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.sectionTitle}>Question Distribution by Difficulty</Text>
+          <Text style={styles.chartTitle}>Answer Distribution</Text>
           <PieChart
             data={pieData}
-            width={Dimensions.get('window').width - 32} // Now using imported Dimensions
-            height={220}
+            width={screenWidth - 64}
+            height={200}
             chartConfig={{
               color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
             }}
             accessor="value"
             backgroundColor="transparent"
-            paddingLeft="15"
+            paddingLeft="75"
             absolute
+            hasLegend={false}
+            style={styles.chart}
           />
+
+          <View style={styles.legendContainer}>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.legendText}>Correct: {current.correctAnswers}</Text>
+              </View>
+              <View style={[styles.legendItem, { marginLeft: 16 }]}>
+                <View style={[styles.legendColor, { backgroundColor: '#EF4444' }]} />
+                <Text style={styles.legendText}>Incorrect: {current.incorrectAnswers}</Text>
+              </View>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendColor, { backgroundColor: '#6B7280' }]} />
+                <Text style={styles.legendText}>Unattempted: {current.unattempted}</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        {/* Difficulty Performance Table */}
-        <View style={styles.tableContainer}>
-          <Text style={styles.sectionTitle}>Performance by Difficulty</Text>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderText, { flex: 2 }]}>Difficulty</Text>
-            <Text style={styles.tableHeaderText}>Correct</Text>
-            <Text style={styles.tableHeaderText}>Incorrect</Text>
-            <Text style={styles.tableHeaderText}>% Correct</Text>
+        {/* Metrics */}
+        <View style={styles.metricsContainer}>
+          <Text style={styles.sectionTitle}>Performance Summary</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricCard}>
+              <Ionicons name="help-circle" size={24} color="#4F46E5" style={styles.metricIcon} />
+              <Text style={styles.metricLabel}>Total Questions</Text>
+              <Text style={styles.metricValue}>{current.totalQuestions}</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Ionicons name="trophy" size={24} color="#10B981" style={styles.metricIcon} />
+              <Text style={styles.metricLabel}>Percentage</Text>
+              <Text style={styles.metricValue}>{current.percentage.toFixed(1)}%</Text>
+            </View>
           </View>
-          {difficultyData.map((item, index) => (
-            <View key={index} style={[styles.tableRow, index % 2 === 0 && styles.evenRow]}>
-              <Text style={[styles.tableCell, { flex: 2, color: getColorForDifficulty(item.difficulty) }]}>
-                {item.difficulty}
-              </Text>
-              <Text style={styles.tableCell}>{item.correctAnswers}</Text>
-              <Text style={styles.tableCell}>{item.incorrectAnswers}</Text>
-              <Text style={styles.tableCell}>
-                {((item.correctAnswers / (item.correctAnswers + item.incorrectAnswers)) * 100 || 0).toFixed(1)}%
+          <View style={styles.metricRow}>
+            <View style={styles.metricCard}>
+              <Ionicons name="stats-chart" size={24} color="#F59E0B" style={styles.metricIcon} />
+              <Text style={styles.metricLabel}>Score</Text>
+              <Text style={styles.metricValue}>{current.score}/{current.maxScore}</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Ionicons name="checkmark-circle" size={24} color="#8B5CF6" style={styles.metricIcon} />
+              <Text style={styles.metricLabel}>Accuracy</Text>
+              <Text style={styles.metricValue}>
+                {((current.correctAnswers / current.totalQuestions) * 100).toFixed(1)}%
               </Text>
             </View>
-          ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -106,10 +192,7 @@ const DifficultyAnalysis = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
+  safeArea: { flex: 1, backgroundColor: '#ffffff' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -119,78 +202,128 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6',
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: 20, fontWeight: '600', color: '#1f2937',
   },
   scrollContainer: {
     padding: 16,
     paddingBottom: 24,
   },
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+  },
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 10,
+    marginBottom: 20,
+  },
+  dropdownWrapper: {
+    zIndex: 10,
+  },
+  dropdownHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', padding: 16,
+    backgroundColor: '#F9FAFB', borderWidth: 1,
+    borderColor: '#E5E7EB', borderRadius: 12,
+  },
+  dropdownHeaderText: {
+    fontSize: 16, color: '#1F2937', fontWeight: '500',
+  },
+  dropdownListOverlay: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    maxHeight: 200,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    zIndex: 100,
+  },
+  dropdownScroll: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#F5F3FF',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#1F2937',
   },
   chartContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 2,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
+  chartTitle: {
+    fontSize: 16, fontWeight: '600', color: '#1F2937', textAlign: 'center', marginBottom: 8,
   },
-  tableContainer: {
+  chart: {
+    borderRadius: 8,
+  },
+  legendContainer: {
+    marginTop: 8,
+  },
+  legendRow: {
+    flexDirection: 'row', justifyContent: 'center', marginBottom: 8,
+  },
+  legendItem: {
+    flexDirection: 'row', alignItems: 'center',
+  },
+  legendColor: {
+    width: 16, height: 16, borderRadius: 8, marginRight: 8,
+  },
+  legendText: {
+    fontSize: 14, color: '#374151',
+  },
+  metricsContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 2,
   },
-  tableHeader: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  sectionTitle: {
+    fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 16,
   },
-  tableHeaderText: {
-    flex: 1,
-    fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
+  metricRow: {
+    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12,
   },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-  },
-  evenRow: {
+  metricCard: {
     backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 16,
+    width: '48%',
+    alignItems: 'center',
   },
-  tableCell: {
-    flex: 1,
-    color: '#374151',
-    textAlign: 'center',
+  metricIcon: {
+    marginBottom: 8,
+  },
+  metricLabel: {
+    fontSize: 14, color: '#6B7280', marginBottom: 4, textAlign: 'center',
+  },
+  metricValue: {
+    fontSize: 18, fontWeight: '600', color: '#1F2937', textAlign: 'center',
   },
 });
 

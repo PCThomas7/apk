@@ -1,51 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Vidstack Player</title>
-  <!-- Import Vidstack styles for default layout -->
   <link rel="stylesheet" href="https://cdn.vidstack.io/player/theme.css" />
   <link rel="stylesheet" href="https://cdn.vidstack.io/player/video.css" />
-  <!-- Import Vidstack player elements -->
   <script src="https://cdn.vidstack.io/player" type="module"></script>
   <style>
-    body,
-    html {
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
+      background: #000;
       overflow: hidden;
-      background-color: #000;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    .container {
-      display: flex;
-      flex-direction: column;
+    .root-container {
       width: 100%;
       height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .video-wrapper {
+      width: 100%;
+      height: 100%;
+      position: relative;
     }
 
     media-player {
       width: 100%;
-      flex: 1;
+      height: 100%;
       --media-brand: #4c9aff;
-      --media-focus-ring-color: #4c9aff;
+      --media-font-family: sans-serif;
+      --media-controls-color: #f5f5f5;
+      --media-focus-ring: 0 0 0 3px rgb(78 156 246);
     }
 
-    .player-title {
-      color: white;
-      text-align: center;
-      padding: 8px 0;
-      font-size: 14px;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 10;
+    media-player video {
+      object-fit: contain !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    media-provider {
+      width: 100% !important;
+      height: 100% !important;
     }
 
     .loading-indicator {
@@ -61,64 +65,248 @@
       z-index: 5;
     }
 
-    /* Enhance fullscreen button styling */
-    media-fullscreen-button {
-      --media-focus-ring: 2px solid rgb(78, 156, 246);
-      margin-right: 5px;
+    media-gesture {
+      display: none !important;
     }
 
-    /* Fix positioning in fullscreen mode */
-    :fullscreen media-player,
-    :-webkit-full-screen media-player,
-    :-ms-fullscreen media-player,
-    :fullscreen .container,
-    :-webkit-full-screen .container,
-    :-ms-fullscreen .container {
-      width: 100vw;
-      height: 100vh;
-      background-color: #000;
+    body.hide-controls .center-controls,
+    body.hide-controls .bottom-controls,
+    body.hide-controls .top-controls,
+    body.hide-controls .settings-panel.visible {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
     }
 
-    /* Hide the title in fullscreen mode */
-    :fullscreen .player-title,
-    :-webkit-full-screen .player-title,
-    :-ms-fullscreen .player-title {
+    body .center-controls,
+    body .bottom-controls,
+    body .top-controls,
+    body .settings-panel.visible {
+      opacity: 1;
+      pointer-events: all;
+      transition: opacity 0.3s;
+    }
+
+    .center-controls {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      z-index: 10;
+    }
+
+    .bottom-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .top-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+    }
+
+    .vds-button {
+      --media-button-color: var(--media-controls-color, #f5f5f5);
+      --media-button-size: 40px;
+      --media-button-icon-size: 60%;
+      --media-button-padding: 0px;
+      --media-button-border-radius: 50%;
+      --media-button-hover-bg: rgb(255 255 255 / 0.2);
+      --media-button-hover-transform: scale(1.1);
+      --media-button-hover-transition: transform 0.2s ease-in;
+      --media-button-touch-hover-border-radius: 100%;
+      --media-button-touch-hover-bg: rgb(255 255 255 / 0.2);
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .vds-button[data-paused] .pause-icon,
+    .vds-button:not([data-paused]) .play-icon {
       display: none;
     }
 
-    /* Ensure controls are visible when hovering in fullscreen */
-    :fullscreen media-controls,
-    :-webkit-full-screen media-controls,
-    :-ms-fullscreen media-controls {
-      opacity: 1;
+    .vds-slider {
+      --media-slider-width: 100%;
+      --media-slider-height: 48px;
+      --media-slider-track-height: 5px;
+      --media-slider-track-bg: rgb(255 255 255 / 0.3);
+      --media-slider-track-fill-bg: #4F46E5;
+      --media-slider-track-progress-bg: rgb(255 255 255 / 0.5);
+      --media-slider-thumb-size: 15px;
+      --media-slider-thumb-bg: #fff;
+    }
+
+    media-time-slider {
+      position: absolute;
+      bottom: 20px;
+      z-index: 10;
+    }
+
+    .vds-time-group {
+      --media-time-divider-gap: 5px;
+      --media-time-divider-color: rgba(255, 255, 255, 0.7);
+      --media-time-font-size: 14px;
+      --media-time-font-weight: 500;
+      --media-time-color: #fff;
+      display: flex;
+      align-items: center;
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+
+    .vds-time-divider {
+      margin: 0 3px;
+    }
+
+    .settings-panel {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+      padding: 15px;
+      color: white;
+      display: none;
+      z-index: 20;
+      min-width: 150px;
+    }
+
+    .settings-panel.visible {
+      display: block;
+    }
+
+    .settings-panel h4 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .speed-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .speed-btn.active {
+      background: #4c9aff;
+    }
+
+    .current-speed {
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
+    .loading-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      border-radius: 4px;
+      z-index: 5;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <div id="player-title" class="player-title"></div>
-    <media-player id="media-player" crossorigin playsinline muted autoplay>
-      <media-provider></media-provider>
-      <media-video-layout thumbnails="">
-        <!-- Explicit customization for the controls -->
-        <template slot="bottom-controls">
-          <media-control-bar>
-            <media-play-button></media-play-button>
-            <media-mute-button></media-mute-button>
-            <media-volume-slider></media-volume-slider>
-            <media-time-display></media-time-display>
-            <media-time-slider></media-time-slider>
-            <media-playback-rate-button></media-playback-rate-button>
-            <media-fullscreen-button></media-fullscreen-button>
-          </media-control-bar>
-        </template>
-      </media-video-layout>
-    </media-player>
+  <div class="root-container">
+    <div class="video-wrapper">
+      <div id="loading" class="loading-indicator">Loading...</div>
+      <media-player id="media-player" crossorigin playsinline autoplay>
+        <media-provider></media-provider>
+
+        <div class="top-controls">
+          <button class="vds-button" id="settings-btn">
+            <svg class="vds-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path>
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z">
+              </path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="settings-panel" id="settings-panel">
+          <h4>Playback Speed</h4>
+          <div class="speed-control">
+            <button class="speed-btn" data-speed="0.5">0.5x</button>
+            <button class="speed-btn" data-speed="0.75">0.75x</button>
+            <button class="speed-btn active" data-speed="1">1x</button>
+            <button class="speed-btn" data-speed="1.25">1.25x</button>
+            <button class="speed-btn" data-speed="1.5">1.5x</button>
+            <button class="speed-btn" data-speed="2">2x</button>
+          </div>
+        </div>
+
+        <div class="center-controls">
+          <media-seek-button class="vds-button" seconds="-10">
+            <svg class="vds-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 17l-5-5 5-5"></path>
+              <path d="M18 17l-5-5 5-5"></path>
+            </svg>
+          </media-seek-button>
+
+          <media-play-button class="vds-button">
+            <svg class="play-icon vds-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg class="pause-icon vds-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </media-play-button>
+
+          <media-seek-button class="vds-button" seconds="10">
+            <svg class="vds-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 17l5-5-5-5"></path>
+              <path d="M6 17l5-5-5-5"></path>
+            </svg>
+          </media-seek-button>
+        </div>
+
+        <div class="bottom-controls">
+          <div class="vds-time-group">
+            <media-time class="vds-time" type="current"></media-time>
+            <div class="vds-time-divider">/</div>
+            <media-time class="vds-time" type="duration"></media-time>
+          </div>
+
+          <media-time-slider class="vds-time-slider vds-slider">
+            <div class="vds-slider-track"></div>
+            <div class="vds-slider-track-fill vds-slider-track"></div>
+            <div class="vds-slider-progress vds-slider-track"></div>
+            <div class="vds-slider-thumb"></div>
+          </media-time-slider>
+        </div>
+      </media-player>
+    </div>
   </div>
 
   <script>
-    // Function to get URL parameters
     function getParameterByName(name) {
       const url = window.location.href;
       name = name.replace(/[\[\]]/g, '\\$&');
@@ -129,22 +317,16 @@
       return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
 
-    // Get video source and title from URL parameters
     const videoSrc = getParameterByName('src') || 'youtube/_cMxraX_5RE';
-    // Set video source and title
     document.addEventListener('DOMContentLoaded', () => {
       const player = document.getElementById('media-player');
-      const titleElement = document.getElementById('player-title');
       const loadingElement = document.getElementById('loading');
 
-      // For throttling time updates
       let lastTimeUpdate = 0;
       const TIME_UPDATE_THROTTLE = 250; // ms between updates
 
-      // Set source
       player.src = videoSrc;
 
-      // Listen for player events
       player.addEventListener('provider-change', () => {
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage('PLAYER_READY');
@@ -154,16 +336,13 @@
 
       player.addEventListener('can-play', () => {
         if (typeof startTime === 'number' && startTime > 0) {
-          // Seek to the provided startTime value
           player.currentTime = startTime;
         }
-        // Notify React Native
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage('CAN_PLAY');
         }
         loadingElement.style.display = 'none';
       });
-
 
       player.addEventListener('play', () => {
         if (window.ReactNativeWebView) {
@@ -186,7 +365,6 @@
         }
       });
 
-      // Send time updates to React Native - throttled to prevent excessive updates
       player.addEventListener('time-update', () => {
         const now = Date.now();
         if (now - lastTimeUpdate > TIME_UPDATE_THROTTLE) {
@@ -202,7 +380,6 @@
         }
       });
 
-      // Also send duration once it's available
       player.addEventListener('duration-change', () => {
         if (window.ReactNativeWebView && player.duration) {
           const timeData = {
@@ -213,35 +390,28 @@
         }
       });
 
-      // Enhanced fullscreen handling
       player.addEventListener('fullscreen-change', (event) => {
         const isFullscreen = event.detail;
         console.log('Fullscreen changed:', isFullscreen);
 
-        // Notify React Native about fullscreen state changes
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(isFullscreen ? 'ENTERED_FULLSCREEN' : 'EXITED_FULLSCREEN');
         }
 
-        // Additional handling for mobile fullscreen
         if (isFullscreen) {
-          // Force landscape orientation hint for mobile browsers
           if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(err => console.warn('Unable to lock orientation:', err));
           }
         } else {
-          // Unlock orientation when exiting fullscreen
           if (screen.orientation && screen.orientation.unlock) {
             screen.orientation.unlock().catch(err => console.warn('Unable to unlock orientation:', err));
           }
         }
       });
 
-      // Add a custom fullscreen button click handler for iOS compatibility
       const fullscreenButton = document.querySelector('media-fullscreen-button');
       if (fullscreenButton) {
         fullscreenButton.addEventListener('click', () => {
-          // iOS sometimes needs a bit of help with fullscreen
           if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
             console.log('iOS device detected, sending additional fullscreen message');
             if (window.ReactNativeWebView) {
@@ -251,7 +421,6 @@
         });
       }
 
-      // Always mark as ready after a timeout
       setTimeout(() => {
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage('PLAYER_READY');
@@ -259,18 +428,57 @@
         loadingElement.style.display = 'none';
       }, 3000);
 
-      // Handle YouTube videos specifically
       if (videoSrc.startsWith('youtube/')) {
-        // YouTube videos need special handling
         console.log('Loading YouTube video:', videoSrc);
 
-        // Add a longer timeout for YouTube videos as they can take longer to load
         setTimeout(() => {
           if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage('YOUTUBE_READY');
           }
         }, 2000);
       }
+
+      let controlsTimeout;
+      function showControls() {
+        document.body.classList.remove('hide-controls');
+        clearTimeout(controlsTimeout);
+        controlsTimeout = setTimeout(() => {
+          document.body.classList.add('hide-controls');
+        }, 5000);
+      }
+      function toggleControls() {
+        if (document.body.classList.contains('hide-controls')) {
+          showControls();
+        }
+      }
+      showControls();
+      player.addEventListener('click', toggleControls);
+      player.addEventListener('pause', showControls);
+      player.addEventListener('play', showControls);
+
+      const settingsBtn = document.getElementById('settings-btn');
+      const settingsPanel = document.getElementById('settings-panel');
+      const speedBtns = document.querySelectorAll('.speed-btn');
+
+      settingsBtn.addEventListener('click', () => {
+        settingsPanel.classList.toggle('visible');
+      });
+
+      speedBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const speed = parseFloat(btn.dataset.speed);
+          player.playbackRate = speed;
+
+          speedBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+          settingsPanel.classList.remove('visible');
+        }
+      });
     });
   </script>
 </body>

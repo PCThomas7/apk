@@ -525,7 +525,7 @@ const UpcomingLessons = ({ lessons }: UpcomingLessonsProps) => {
     if(lesson.status === 'upcoming'){
       router.push(`/components/quizzes/QuizLessonScreen?lessonId=${lesson?._id}`)
     }else{
-    router.push(`/components/courses/videoPlayer?video=${encodeURIComponent(lesson?.content)}&status=${'in_progress'}&vediotitle=${encodeURIComponent(lesson?.title)}&watchTimeSeconds=${'0'}&totalTImeSeconds=${'0'}&viewCount=${'0'}&bookmarked=${'false'}&lessonId=${lesson?._id}&chapterId=${lesson?.chapterId}&sectionId=${lesson?.sectionId}&courseId=${lesson?.courseId }`)
+    router.push(`/components/courses/courseRoom?video=${encodeURIComponent(lesson?.content)}&status=${'in_progress'}&vediotitle=${encodeURIComponent(lesson?.title)}&watchTimeSeconds=${'0'}&totalTImeSeconds=${'0'}&viewCount=${'0'}&bookmarked=${'false'}&lessonId=${lesson?._id}&chapterId=${lesson?.chapterId}&sectionId=${lesson?.sectionId}&courseId=${lesson?.courseId }`)
     }
 
   }, []);

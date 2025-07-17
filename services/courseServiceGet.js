@@ -204,8 +204,8 @@ const courseServiceGet = {
       throw new Error('Failed to update lesson progress');
     }
   },
-  
-  getUserAverageScore:async () => {
+
+  getUserAverageScore: async () => {
     try {
       const response = await api.get(`/student/analytics/averageScore`);
       return response.data;
@@ -225,12 +225,32 @@ const courseServiceGet = {
     }
   },
 
-   getStudentAnalytics: async () => {
+  getStudentAnalytics: async () => {
     try {
       const response = await api.get('/student/analytics');
       return response.data;
     } catch (error) {
       console.error('Error fetching student analytics:', error);
+      throw error;
+    }
+  },
+
+  getQuizAttemptReport: async (quizId) => {
+    try {
+      const response = await api.get(`/quizzes/${quizId}/attempts/me/report`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quiz attempt report:', error);
+      throw error;
+    }
+  },
+
+  getHandoutsByLesson: async (lessonId) => {
+    try {
+      const response = await api.get(`/handouts/lesson/${lessonId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching handouts:', error);
       throw error;
     }
   },

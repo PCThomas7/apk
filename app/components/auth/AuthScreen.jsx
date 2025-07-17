@@ -217,7 +217,6 @@ export default function AuthScreen() {
 
   const handleLoginSuccess = async (token, userDetails) => {
     try {
-      console.log('Login successful:', token);
       await SecureStore.setItemAsync('authToken', token);
       await SecureStore.setItemAsync('userDetails', JSON.stringify(userDetails));
       navigation.replace("(tabs)");

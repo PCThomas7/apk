@@ -79,7 +79,7 @@ const QuizReport: React.FC = () => {
     };
 
     const handleAnalytics = () => {
-        // router.push('/components/quizzes/AnalyticsScreen');
+        router.push(`/components/QuizAnalytics/QuizAnalyticsScreen?quizId=${quiz.id}`);
     };
 
     const handleSolutions = () => {
@@ -344,22 +344,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         backgroundColor: '#fff',
     },
-   bottomButton: {
-  flex: 1,
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#7c3aed', // violet border
-  borderRadius: 8,
-  paddingVertical: 8,
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginHorizontal: 8,
-},
-bottomButtonText: {
-  color: '#7c3aed',       // violet text
-  fontSize: 16,
-  fontWeight: '600',
-}
+    bottomButton: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#7c3aed', // violet border
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 8,
+    },
+    bottomButtonText: {
+        color: '#7c3aed',       // violet text
+        fontSize: 16,
+        fontWeight: '600',
+    }
 
 });
 

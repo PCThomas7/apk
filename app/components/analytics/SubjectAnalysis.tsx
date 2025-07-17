@@ -10,6 +10,7 @@ import { PieChart } from 'react-native-chart-kit';
 const SubjectAnalysis = () => {
   const router = useRouter();
   const subjectPerformance = useAppSelector(selectSubjectPerformance);
+  console.log("subjectPerformance :",subjectPerformance)
   const [selectedSubject, setSelectedSubject] = useState(subjectPerformance?.[0]?.subject || '');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;

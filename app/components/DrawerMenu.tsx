@@ -389,7 +389,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
       : 30;
 
   const menuItems = [
-    { icon: 'bar-chart-outline', title: 'My Performance', onPress: () => console.log('Performance pressed') },
+    { icon: 'bar-chart-outline', title: 'My Performance', onPress: () => router.push('/components/analytics/AnalyticsList') },
     { icon: 'chatbubble-ellipses-outline', title: 'Ask a Doubt', onPress: () => console.log('Ask a Doubt pressed') },
     { icon: 'people-outline', title: 'Community', onPress: () => console.log('Community pressed') },
     { icon: 'share-social-outline', title: 'Share App', onPress: () => console.log('Share pressed') },
@@ -427,7 +427,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
   const handleLogoutConfirm = async () => {
     try {
       setShowLogoutModal(false);
-      
+
       // Close the drawer with animation
       Animated.parallel([
         Animated.timing(translateX, {
@@ -442,17 +442,17 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
         })
       ]).start(async () => {
         onClose();
-        
+
         try {
           // Delete the auth token
           await SecureStore.deleteItemAsync('authToken');
-          
+
           // Navigate to AuthScreen using expo-router
           router.replace('/components/auth/AuthScreen');
         } catch (error) {
           console.error('Error during logout:', error);
           // Still navigate even if token deletion fails
-           router.replace('/components/auth/AuthScreen');
+          router.replace('/components/auth/AuthScreen');
         }
       });
     } catch (error) {

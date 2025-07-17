@@ -12,7 +12,7 @@ const CourseLesson = () => {
     const [lessons, setLessons] = useState<any[]>([]);
     const [progressData, setProgressData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
+    
     useEffect(() => {
         const fetchLessons = async () => {
             setLoading(true);
@@ -164,14 +164,13 @@ const CourseLesson = () => {
                             const handleLessonPress = () => {
                                 if (item.type === 'video') {
                                     router.push(
-                                        `/components/courses/videoPlayer?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
+                                        `/components/courses/courseRoom?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
                                     );
                                 }
                                 else if (item.type === 'quiz') {
-                                    router.push(`/components/quizzes/QuizLessonScreen?lessonId=${item._id}&contentId=${item.content}`);
+                                    router.push(`/components/quizzes/QuizLessonScreen?lessonId=${item._id}&contentId=${item.content}&chapterId=${chapterId}&courseId=${courseId}&sectionId=${sectionId}`);
                                 }
                             };
-
                             return (
                                 <TouchableOpacity
                                     activeOpacity={0.8}

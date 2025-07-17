@@ -61,13 +61,12 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
     console.log("email : ", formData.password)
 
     try {
-      const res = await axios.post("https://backend.professorpcthomas.com/api/auth/login", {
+      const res = await axios.post("https://dev.professorpcthomas.com/api/auth/login", {
         email: formData.email,
         password: formData.password,
       });
       const token = res.data.token;
       const userDetails = res.data.user
-      console.log("userdetails : ",userDetails)
       onLoginSuccess(token,userDetails)
     } catch (err) {
       console.error("Login failed:", err.response?.data || err);

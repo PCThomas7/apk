@@ -22,7 +22,8 @@ type Lesson = {
 };
 
 const QuizLessonScreen = () => {
-  const { lessonId, contentId } = useLocalSearchParams();
+  const { lessonId, contentId, chapterId, courseId, sectionId } = useLocalSearchParams();
+  const contentIdStr = Array.isArray(contentId) ? contentId[0] : contentId as string;
   const router = useRouter();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -47,6 +48,21 @@ const QuizLessonScreen = () => {
   const handleBack = () => {
     router.back();
   };
+
+const markLessonasComplete = async (contentIdStr: string) => {
+  try {
+    const response = await courseServiceGet.markLessonCompleted(lessonId, {
+      courseId: courseId,
+      sectionId: sectionId,
+      chapterId: chapterId
+    });
+  } catch (error) {
+    console.error('Completion error:', error);
+  }
+
+  router.push(`/components/quizzes/QuizAttemptScreen?contentId=${contentIdStr}`);
+};
+
 
   if (loading) {
     return (
@@ -139,7 +155,7 @@ const QuizLessonScreen = () => {
             </Text>
             <TouchableOpacity
               style={[styles.button, styles.primaryButton]}
-              onPress={() => router.push(`/components/quizzes/QuizAttemptScreen?contentId=${contentId}`)}
+              onPress={() => markLessonasComplete(contentIdStr)}
             >
               <Text style={styles.buttonText}>Start Quiz Now</Text>
               <Ionicons name="arrow-forward" size={20} color="white" style={styles.buttonIcon} />
@@ -277,7 +293,7 @@ const styles = StyleSheet.create({
   buttonIcon: {
     marginLeft: 8,
   },
-  
+
   footerText: {
     fontSize: 15,
     color: '#6B7280',

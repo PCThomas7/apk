@@ -109,7 +109,7 @@
 
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 import { HapticTab } from '../components/HapticTab';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -150,13 +150,10 @@ export default function TabLayout() {
     };
   }, []);
 
-
-
   return (
     <>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} hidden={false} />
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: '#6366F1',
@@ -228,7 +225,6 @@ export default function TabLayout() {
           />
         </Tabs>
       </SafeAreaView>
-
       {/* Render Drawer Outside SafeAreaView so it overlays all tabs */}
       <DrawerMenu visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
     </>

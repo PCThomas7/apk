@@ -140,6 +140,17 @@ export const selectDifficultyPerformance = (state: { analytics: AnalyticsState }
 export const selectRecentPerformance = (state: { analytics: AnalyticsState }) => 
   state.analytics.data?.recentPerformance || [];
 
+export const selectQuestionTypePerformance = (state: { analytics: AnalyticsState }) =>
+  state.analytics.data?.questionTypePerformance || [];
+
+export const selectTimeSpentAnalysis = (state: { analytics: AnalyticsState }) =>
+  state.analytics.data?.timeSpentAnalysis || {
+    totalTimeSpent: 0,
+    averageTimePerQuiz: 0,
+    averageTimePerQuestion: 0,
+  };
+
+
 export const selectSummaryMetrics = (state: { analytics: AnalyticsState }) => {
   if (!state.analytics.data) return null;
   
