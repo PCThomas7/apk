@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import KatexRendered from './KatexRenderer';
 import { setSolutionSelectedQuestionId } from '../../../redux/slices/quizAttemptSlice';
+import courseServiceGet from '@/services/courseServiceGet';
 
 const QuizSolutionScreen = React.memo(() => {
   const router = useRouter();
@@ -14,6 +15,7 @@ const QuizSolutionScreen = React.memo(() => {
   const { index, answers } = useLocalSearchParams<{ index?: string; answers?: string }>();
   const quiz = useSelector((state: RootState) => state.quiz.currentQuiz);
   const solutionSelectedQuestionId = useSelector((state: RootState) => state.solution.selectedQuestionId);
+  const [currentQuestionBookmarkStatus, setcurrentQuestionBookmarkStatus] = useState(false);
 
   // Memoized parsed answers
   const parsedAnswers = useMemo(() => {
@@ -43,7 +45,31 @@ const QuizSolutionScreen = React.memo(() => {
 
   const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
   const currentQuestion = allQuestions[currentIndex];
-  console.log("currentQuestions : ",currentQuestion.options)
+
+  useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      const response = await courseServiceGet.checkBookmarkStatus(currentQuestion.id);
+      setcurrentQuestionBookmarkStatus(response);
+    };
+
+    if (currentQuestion?.id) {
+      checkBookmarkStatus();
+    }
+  }, [currentQuestion?.id]);
+
+  const toggleQuestionBookmark = async () => {
+    try {
+      if (!currentQuestionBookmarkStatus) {
+        await courseServiceGet.bookmarkQuestion(currentQuestion.id);
+        setcurrentQuestionBookmarkStatus(true); // Optimistic update
+      } else {
+        await courseServiceGet.removeBookmark(currentQuestion.id);
+        setcurrentQuestionBookmarkStatus(false); // Optimistic update
+      }
+    } catch (error) {
+      console.error('Bookmark toggle error:', error);
+    }
+  };
 
   // Effect to handle question navigation from redux
   React.useEffect(() => {
@@ -71,6 +97,7 @@ const QuizSolutionScreen = React.memo(() => {
     setCurrentIndex(prev => Math.max(prev - 1, 0)), []);
   const handleNext = useCallback(() =>
     setCurrentIndex(prev => Math.min(prev + 1, allQuestions.length - 1)), [allQuestions.length]);
+
   const handleQuestionList = useCallback(() =>
     router.push({
       pathname: '/components/quizzes/ReportPalette',
@@ -107,20 +134,44 @@ const QuizSolutionScreen = React.memo(() => {
       </View>
 
       <View style={styles.contentContainer}>
+
         <View style={styles.questionHeader}>
+
           <Text style={styles.sectionTitle}>
             {currentQuestion?.sectionName || ''} (Q{currentIndex + 1}/{allQuestions.length})
           </Text>
-          {currentQuestion?.tags?.difficulty && (
-            <View style={[
-              styles.difficultyBadge,
-              currentQuestion.tags.difficulty === 'Easy' ? { backgroundColor: '#4CAF50' } :
-                currentQuestion.tags.difficulty === 'Medium' ? { backgroundColor: '#FFC107' } :
-                  { backgroundColor: '#F44336' }
-            ]}>
-              <Text style={styles.difficultyText}>{currentQuestion.tags.difficulty}</Text>
-            </View>
-          )}
+
+          <View style={styles.rightContainer}>
+            <TouchableOpacity onPress={toggleQuestionBookmark} style={styles.iconWrapper}>
+              <Ionicons
+                name={currentQuestionBookmarkStatus ? "bookmark" : "bookmark-outline"}
+                size={20}
+                color={
+                  currentQuestion?.tags?.difficulty === 'Easy'
+                    ? '#4CAF50'
+                    : currentQuestion?.tags?.difficulty === 'Medium'
+                      ? '#FFC107'
+                      : currentQuestion?.tags?.difficulty === 'Hard'
+                        ? '#F44336'
+                        : '#888'
+                }
+              />
+            </TouchableOpacity>
+
+            {currentQuestion?.tags?.difficulty && (
+              <View style={[
+                styles.difficultyBadge,
+                currentQuestion.tags.difficulty === 'Easy' ? { backgroundColor: '#4CAF50' } :
+                  currentQuestion.tags.difficulty === 'Medium' ? { backgroundColor: '#FFC107' } :
+                    { backgroundColor: '#F44336' }
+              ]}>
+                <Text style={styles.difficultyText}>
+                  {currentQuestion.tags.difficulty}
+                </Text>
+              </View>
+            )}
+          </View>
+
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -268,9 +319,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '600', color: '#4F46E5' },
-  difficultyBadge: { borderRadius: 12, paddingVertical: 4, paddingHorizontal: 8, marginLeft: 8 },
-  difficultyText: { color: '#fff', fontWeight: '500', fontSize: 12 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4F46E5',
+    flexShrink: 1, // Prevents overflow
+  },
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    marginRight: 15,
+  },
+  difficultyBadge: {
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  difficultyText: {
+    color: '#fff',
+    fontWeight: '500',
+    fontSize: 12,
+  },
   questionContainer: { marginBottom: 16, borderRadius: 8, padding: 10 },
   questionText: { fontSize: 16, lineHeight: 24, color: '#333', flex: 1, flexWrap: 'wrap' },
   questionImage: { width: '100%', height: 200, marginTop: 12, borderRadius: 4 },

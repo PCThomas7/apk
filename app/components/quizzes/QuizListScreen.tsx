@@ -395,6 +395,7 @@ interface Quiz {
   quizType: string;
   duration?: string;
   content: string;
+  lock?: Boolean
 }
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
@@ -460,7 +461,8 @@ const QuizListScreen = () => {
           title: quiz.title,
           quizType: quiz.quizType,
           duration: quiz.duration,
-          content: quiz.content
+          content: quiz.content,
+          lock: quiz.lock,
         })),
         subject: subject || undefined,
         chapter: chapter || undefined,
@@ -516,12 +518,23 @@ const QuizListScreen = () => {
           )}
         </View>
 
+         {quiz.lock && (
+        <Text style={styles.lockInfoText}>This quiz is not yet live.</Text>
+      )}
+
         <TouchableOpacity
-          style={styles.startButton}
+          style={[
+            styles.startButton,
+            quiz.lock && { backgroundColor: '#d1d5db' }, // Gray when locked
+          ]}
           onPress={() => handleTakeQuiz(quiz.content)}
           activeOpacity={0.9}
+          disabled={!!quiz.lock}
         >
-          <Text style={styles.startButtonText}>Start Quiz</Text>
+
+          <Text style={styles.startButtonText}>
+            {quiz.lock ? "Locked" : "Start Quiz"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -697,6 +710,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginRight: 8
   },
+  lockInfoText: {
+  marginTop: 8,
+  marginBottom: 4,
+  color: '#ef4444', // Tailwind red-500
+  fontSize: 13,
+  textAlign: 'center',
+},
   errorContainer: {
     flex: 1,
     justifyContent: 'center',

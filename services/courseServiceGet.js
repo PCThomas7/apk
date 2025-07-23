@@ -175,6 +175,7 @@ const courseServiceGet = {
     }
   },
 
+  // Bookmarks
   toggleLessonBookmark: async (lessonId) => {
     try {
       const response = await api.post(`/progress/lesson/${lessonId}/bookmark`);
@@ -184,6 +185,53 @@ const courseServiceGet = {
       throw new Error('Failed to toggle lesson bookmark');
     }
   },
+  bookmarkQuestion: async (questionId) => {
+    try {
+      const response = await api.post('/bookmarked-questions', { questionId });
+      return response.data;
+    } catch (error) {
+      console.error('Error bookmarking question:', error);
+      throw error;
+    }
+  },
+  checkBookmarkStatus: async (questionId) => {
+    try {
+      const response = await api.get(`/bookmarked-questions/status/${questionId}`);
+      return response.data.isBookmarked;
+    } catch (error) {
+      console.error('Error checking bookmark status:', error);
+      return false;
+    }
+  },
+  getBookmarkedLessons: async () => {
+    try {
+      const response = await api.get(`/progress/bookmarks`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching bookmarked lessons:', error);
+      throw new Error('Failed to fetch bookmarked lessons');
+    }
+  },
+  getBookmarkedQuestions: async (page, limit) => {
+    try {
+      const response = await api.get('/bookmarked-questions', {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching bookmarked questions:', error);
+      throw error;
+    }
+  },
+  removeBookmark: async (questionId) => {
+  try {
+    const response = await api.delete(`/bookmarked-questions/${questionId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing bookmark:', error);
+    throw error;
+  }
+},
 
   markLessonCompleted: async (lessonId, data) => {
     try {
@@ -251,6 +299,98 @@ const courseServiceGet = {
       return response.data;
     } catch (error) {
       console.error('Error fetching handouts:', error);
+      throw error;
+    }
+  },
+
+  //custom create quiz routes
+  getExamTypes: async () => {
+    try {
+      const response = await api.get('/student/tags/exam-types');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching exam types:', error);
+      throw new Error('Failed to fetch exam types');
+    }
+  },
+
+  getCustomizedQuizCount: async () => {
+    try {
+      const response = await api.get('/student/my-quizzes');
+      return response.data.quizzes.length;
+    } catch (error) {
+      console.error('Error fetching quiz count:', error);
+      throw error;
+    }
+  },
+
+  getSubjectsForExamType: async (examType) => {
+    try {
+      const response = await api.get(`/student/tags/subjects/${examType}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching subjects for ${examType}:`, error);
+      throw new Error(`Failed to fetch subjects for ${examType}`);
+    }
+  },
+
+  getChaptersForSubject: async (examType, subject) => {
+    try {
+      const response = await api.get(`/student/tags/chapters/${examType}/${subject}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching chapters for ${examType}/${subject}:`, error);
+      throw new Error(`Failed to fetch chapters for ${examType}/${subject}`);
+    }
+  },
+
+  getTopicsForChapter: async (examType, subject, chapter) => {
+    try {
+      const response = await api.get(`/student/tags/topics/${examType}/${subject}/${chapter}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching topics for ${examType}/${subject}/${chapter}:`, error);
+      throw new Error(`Failed to fetch topics for ${examType}/${subject}/${chapter}`);
+    }
+  },
+
+  createCustomQuiz: async (params) => {
+    try {
+      // Transform the subjects, chapters, and topics into the new format
+      const subjects = params.subject.split(',');
+      const chapters = params.chapter.split(',').map((ch, i) => `${subjects[Math.floor(i / params.chapter.split(',').length * subjects.length)]}:${ch}`);
+
+      const topics = ['']
+
+      const response = await api.post('/student/quizzes/customize', {
+        ...params,
+        subjects,
+        chapters,
+        topics
+      });
+      return response.data;
+    } catch (error) {
+      console.log("error : ", error)
+      throw error;
+    }
+  },
+
+  getStudentCreatedQuizzes: async () => {
+    try {
+      const response = await api.get('/student/my-quizzes');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student created quizzes:', error);
+      throw error;
+    }
+  },
+
+  deleteStudentQuiz: async (quizId) => {
+    try {
+      const response = await api.delete(`/student/my-quizzes/${quizId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting student quiz:', error);
       throw error;
     }
   },

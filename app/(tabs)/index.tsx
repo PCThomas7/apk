@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator , RefreshControl } from 'react-native';
 import { StudentWelcomeBanner } from '../components/home/welcomeCard';
 import UpcomingLessons from '../components/home/LessonComponent';
 import PerformanceComponent from '../components/home/PerformanceComponent';
@@ -26,10 +26,12 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchUpcomingLessons = useCallback(async () => {
     try {
       setIsLoading(true);
+       setRefreshing(true);
       const lessons = await courseServiceGet.getEnrolledVideoLessons();
       setUpcomingLessons(lessons);
       setError(null);
@@ -39,15 +41,28 @@ const HomeScreen = () => {
       setUpcomingLessons([]);
     } finally {
       setIsLoading(false);
+       setRefreshing(false);
     }
   }, []);
+
+const onRefresh = useCallback(() => {
+    fetchUpcomingLessons();
+  }, [fetchUpcomingLessons]);
 
   useEffect(() => {
     fetchUpcomingLessons();
   }, [fetchUpcomingLessons]);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container}
+    refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#4F46E5']}
+          tintColor="#4F46E5"
+        />
+      }>
       <StudentWelcomeBanner />
       <View style={[styles.section, { minHeight: 350 }]}>
         {upcomingLessons === null ? (
@@ -63,6 +78,7 @@ const HomeScreen = () => {
         router.push(`/components/analytics/AnalyticsList`);
       }} />
     </ScrollView>
+    
   );
 };
 

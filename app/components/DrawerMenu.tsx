@@ -390,10 +390,10 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
 
   const menuItems = [
     { icon: 'bar-chart-outline', title: 'My Performance', onPress: () => router.push('/components/analytics/AnalyticsList') },
-    { icon: 'chatbubble-ellipses-outline', title: 'Ask a Doubt', onPress: () => console.log('Ask a Doubt pressed') },
-    { icon: 'people-outline', title: 'Community', onPress: () => console.log('Community pressed') },
+    { icon: 'chatbubble-ellipses-outline', title: 'Ask a Doubt',  onPress: () => router.push('/components/doubt/doubt') },
+    { icon: 'people-outline', title: 'Community', onPress: () => router.push('/components/community/Community') },
     { icon: 'share-social-outline', title: 'Share App', onPress: () => console.log('Share pressed') },
-    { icon: 'bookmark-outline', title: 'Bookmarks', onPress: () => console.log('Bookmarks pressed') },
+    { icon: 'bookmark-outline', title: 'Bookmarks', onPress: () => router.push('/components/BookMarks/BookMark') },
     { icon: 'notifications-outline', title: 'Notifications', onPress: () => console.log('Notifications pressed') },
     { icon: 'person-outline', title: 'Profile', onPress: () => console.log('Profile pressed') },
     { icon: 'shield-checkmark-outline', title: 'Privacy Policy', onPress: () => console.log('Privacy Policy pressed') },

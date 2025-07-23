@@ -249,7 +249,7 @@ const QuizParticipationScreen: React.FC = () => {
           {isDropdownOpen && (
             <View style={styles.dropdown}>
               <ScrollView
-                style={{ maxHeight: 200 }}
+                style={{ maxHeight: 400 }}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
               >
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FBBF24',
     borderRadius: 8,
-    maxHeight: 200,
+    maxHeight: 400,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

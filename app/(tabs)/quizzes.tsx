@@ -15,10 +15,22 @@ export default function QuizzScreen() {
         pathname: '/components/quizzes/QuizListScreen',
         params: { quizType: 'Mock Exam' }, // Note the space to match your API
       });
-    } else {
+    } else if(quizType === "Short Exam" || quizType === 'DPP') {
       // Navigate to Subject Selection Screen for other quiz types
       router.push({
         pathname: '/components/quizzes/SubjectSelectionScreen',
+        params: { quizType },
+      });
+    }
+    else if(quizType == 'Create Quiz') {
+      router.push({
+        pathname: '/components/quizzes/CreateQuiz/CreateQuizExamType',
+        params: { quizType },
+      });
+    }
+    else{
+      router.push({
+        pathname: '/components/quizzes/CreateQuiz/CreateQuizList',
         params: { quizType },
       });
     }
@@ -57,7 +69,8 @@ const quizOptions = [
   { title: 'DPP Quizzes', description: 'Daily Practice Problems', color: '#2a9d8f', quizType: "DPP" },
   { title: 'Short Exam Quizzes', description: 'Quick assessments', color: '#e76f51', quizType: "Short Exam" },
   { title: 'Mock Exam Quizzes', description: 'Full exam simulation', color: '#264653', quizType: "Mock Exam" },
-  { title: 'Create Practice Quizzes', description: 'Build your own quizzes', color: '#f4a261', quizType: "" },
+  { title: 'Create Practice Quizzes', description: 'Build your own quizzes', color: '#f4a261', quizType: "Create Quiz" },
+  { title: 'Attempt Custom Quizzes', description: 'Try quizzes you created', color: '#6a4c93', quizType: 'Custom Quiz' }, 
 ];
 
 const styles = StyleSheet.create({
@@ -70,9 +83,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
     paddingHorizontal: 24,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   title: {
     fontSize: isLandscape ? 26 : 32,
@@ -97,9 +110,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   quizButton: {
-    minHeight: 100,
+    minHeight: 93,
     borderRadius: 14,
-    paddingVertical: 18,
     paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',

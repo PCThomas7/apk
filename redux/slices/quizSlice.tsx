@@ -171,6 +171,7 @@ interface QuizMeta {
   quizType: string;
   duration?: string;
   content: string;
+  lock?:Boolean;
 }
 
 interface QuizCacheEntry {
@@ -218,9 +219,9 @@ const normalizeQuizType = (quizType: string): keyof QuizState['caches'] => {
 };
 
 const generateCacheKey = (
-  quizType: string, 
-  subject?: string, 
-  chapter?: string, 
+  quizType: string,
+  subject?: string,
+  chapter?: string,
   examType?: string
 ): string => {
   const normalizedType = normalizeQuizType(quizType);
@@ -242,6 +243,7 @@ const quizSlice = createSlice({
         subject?: string;
         chapter?: string;
         examType?: string;
+        lock?: Boolean;
       }>
     ) {
       const { quizType, quizzes, subject, chapter, examType } = action.payload;
@@ -277,6 +279,7 @@ const quizSlice = createSlice({
         subject?: string;
         chapter?: string;
         examType?: string;
+        lock?: Boolean;
       }>
     ) {
       const { quizType, subject, chapter, examType } = action.payload;

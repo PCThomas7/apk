@@ -5,6 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     ActivityIndicator,
+    ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -116,7 +117,7 @@ const QuizReport: React.FC = () => {
                 <Text style={styles.headerTitle}>Quiz Report</Text>
             </View>
 
-            <View style={styles.contentContainer}>
+            <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 {/* Quiz Title and Date */}
                 <View style={styles.quizInfoContainer}>
                     <Text style={styles.quizTitle}>{quiz.title}</Text>
@@ -165,7 +166,7 @@ const QuizReport: React.FC = () => {
                         <Text style={styles.retakeButtonText}>Retake Quiz</Text>
                     </TouchableOpacity>
                 )}
-            </View>
+            </ScrollView>
 
             {/* Bottom Buttons - now fixed at bottom */}
             <View style={styles.bottomButtonContainer}>

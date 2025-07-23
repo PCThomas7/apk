@@ -12,7 +12,7 @@ const CourseLesson = () => {
     const [lessons, setLessons] = useState<any[]>([]);
     const [progressData, setProgressData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     useEffect(() => {
         const fetchLessons = async () => {
             setLoading(true);
@@ -123,6 +123,28 @@ const CourseLesson = () => {
         }
     };
 
+    const toggleLessonBookmark = async (lessonId: string) => {
+        try {
+            const response = await courseServiceGet.toggleLessonBookmark(lessonId);
+            setProgressData(prev =>
+                prev.map((p: any) =>
+                    p.lessonId === lessonId
+                        ? { ...p, bookmarked: response.bookmarked }
+                        : p
+                )
+            );
+        } catch (error) {
+            console.error('Bookmark error:', error);
+        }
+    };
+
+    const isScheduledInFuture = (scheduledFor?: string) => {
+        if (!scheduledFor) return false;
+        const now = new Date();
+        const scheduledDate = new Date(scheduledFor);
+        return scheduledDate > now;
+    };
+
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
             <View style={styles.header}>
@@ -144,6 +166,7 @@ const CourseLesson = () => {
                         renderItem={({ item }) => {
                             const progress = getProgressForLesson(item._id || item.id);
                             const percentage = getPercentage(progress);
+                            const scheduled = isScheduledInFuture(item.scheduledFor);
 
                             // Helper: Completed icon or lesson icon
                             const renderLessonIcon = () => {
@@ -162,6 +185,7 @@ const CourseLesson = () => {
 
                             // --- NEW: onPress handler for video lessons ---
                             const handleLessonPress = () => {
+                                if (scheduled) return; // Prevent navigation if scheduled in future
                                 if (item.type === 'video') {
                                     router.push(
                                         `/components/courses/courseRoom?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
@@ -173,10 +197,10 @@ const CourseLesson = () => {
                             };
                             return (
                                 <TouchableOpacity
-                                    activeOpacity={0.8}
+                                    activeOpacity={scheduled ? 1 : 0.8}
                                     onPress={handleLessonPress}
-                                    disabled={item.type !== 'video' && item.type !== 'quiz'}
-                                    style={{ opacity: item.type === 'video' ? 1 : 0.7 }}
+                                    disabled={scheduled || (item.type !== 'video' && item.type !== 'quiz')}
+                                    style={{ opacity: scheduled ? 0.6 : (item.type === 'video' ? 1 : 0.7) }}
                                 >
                                     <View style={styles.lessonCard}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
@@ -187,11 +211,34 @@ const CourseLesson = () => {
                                                 <Text style={styles.lessonTitle}>{item.title}</Text>
                                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                                                     {getLessonTypeLabel(item.type)}
-                                                    <Text style={styles.lessonMeta}>{item.duration} min</Text>
+                                                    <Text style={styles.lessonMeta}>  {item.duration} min</Text>
+                                                    {/* Show bookmark only if quiz */}
+                                                    {item.type === 'quiz' && (
+                                                        <TouchableOpacity
+                                                            onPress={() => toggleLessonBookmark(item._id || item.id)}
+                                                            style={{ marginLeft: 15 }}
+                                                        >
+                                                            <Ionicons
+                                                                name={progress?.bookmarked ? "bookmark" : "bookmark-outline"}
+                                                                size={20}
+                                                                color="#4F46E5"
+                                                            />
+                                                        </TouchableOpacity>
+                                                    )}
                                                 </View>
+                                                {/* Scheduled badge */}
+                                                {scheduled && (
+                                                    <View style={styles.scheduledBadge}>
+                                                        <Ionicons name="time-outline" size={14} color="#F59E42" style={{ marginRight: 4 }} />
+                                                        <Text style={styles.scheduledText}>
+                                                            Scheduled: {new Date(item.scheduledFor).toLocaleString()}
+                                                        </Text>
+                                                    </View>
+                                                )}
                                             </View>
                                             {getProgressBadge(progress)}
                                         </View>
+                                        {/* Progress bar for videos only */}
                                         {item.type === 'video' && (
                                             <View style={styles.progressRow}>
                                                 <View style={styles.progressBarBackground}>
@@ -200,7 +247,7 @@ const CourseLesson = () => {
                                                             styles.progressBarFill,
                                                             {
                                                                 width: `${percentage}%`,
-                                                                backgroundColor: percentage === 100 ? '#22C55E' : '#6366F1'
+                                                                backgroundColor: percentage === 100 ? '#22C55E' : '#6366F1',
                                                             },
                                                         ]}
                                                     />
@@ -312,6 +359,21 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     badgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    scheduledBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF7ED',
+        borderRadius: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        marginTop: 6,
+        alignSelf: 'flex-start',
+    },
+    scheduledText: {
+        color: '#F59E42',
         fontSize: 12,
         fontWeight: '600',
     },
