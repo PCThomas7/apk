@@ -343,6 +343,7 @@ import {
     DifficultyPerformance,
     QuestionTypePerformance,
 } from '../../../redux/slices/quizAnalyticsSlice';
+import AppHeader from '../../components/header';
 
 type AnalyticsData = DifficultyPerformance | QuestionTypePerformance;
 type AnalyticsMode = 'difficulty' | 'questionType';
@@ -443,20 +444,12 @@ const AnalyticsScreen = () => {
             : (item as QuestionTypePerformance).questionType;
     };
 
-    const getTitle = () => {
-        return mode === 'difficulty'
-            ? 'Difficulty Analytics'
-            : 'Question Type Analytics';
-    };
+
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>{getTitle()}</Text>
-            </View>
+            <AppHeader screenTitle={mode === 'difficulty'  ? 'Difficulty Analytics'
+            : 'Question Type Analytics'} onBackPress={() => router.back()} />
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {/* Dropdown */}
@@ -565,27 +558,6 @@ const AnalyticsScreen = () => {
 // Styles remain exactly the same as in your original code
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#ffffff' },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#F3F4F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1F2937',
-    },
     scrollContainer: {
         padding: 16,
     },

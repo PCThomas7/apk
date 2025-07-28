@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../header';
 
 type ReportData = {
     highScore: number;
@@ -75,9 +76,6 @@ const QuizReport: React.FC = () => {
         fetchReport();
     }, []);
 
-    const handleBack = () => {
-        router.replace('/components/quizzes/QuizAttemptScreen');
-    };
 
     const handleAnalytics = () => {
         router.push(`/components/QuizAnalytics/QuizAnalyticsScreen?quizId=${quiz.id}`);
@@ -110,12 +108,8 @@ const QuizReport: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Quiz Report</Text>
-            </View>
+            <AppHeader screenTitle="Quiz Report" onBackPress={() => router.replace('/components/quizzes/QuizAttemptScreen')} />
+
 
             <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 {/* Quiz Title and Date */}
@@ -161,7 +155,7 @@ const QuizReport: React.FC = () => {
                 {(report?.attemptNumber || 0) >= 1 && (
                     <TouchableOpacity
                         style={styles.retakeButton}
-                        onPress={handleBack}
+                        onPress={() => router.replace('/components/quizzes/QuizAttemptScreen')}
                     >
                         <Text style={styles.retakeButtonText}>Retake Quiz</Text>
                     </TouchableOpacity>
@@ -222,28 +216,6 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: '#ffffff',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb'
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center', // Center icon horizontally
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1f2937'
     },
     contentContainer: {
         flex: 1,

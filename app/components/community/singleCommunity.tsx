@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CommunityService from '../../../services/communityService';
+import AppHeader from '../../components/header';
 
 // Define TypeScript interfaces
 interface Author {
@@ -181,13 +182,7 @@ const SingleCommunity = () => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Community Post</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+         <AppHeader screenTitle="Community Post" onBackPress={() => router.back()} />
 
         {/* Content */}
         <ScrollView
@@ -343,31 +338,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6b7280',
     marginTop: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#F9FAFB',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  headerSpacer: {
-    width: 40,
   },
   scrollView: {
     flex: 1,

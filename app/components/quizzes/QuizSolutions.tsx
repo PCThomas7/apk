@@ -8,12 +8,14 @@ import { RootState } from '../../../redux/store';
 import KatexRendered from './KatexRenderer';
 import { setSolutionSelectedQuestionId } from '../../../redux/slices/quizAttemptSlice';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../header';
 
 const QuizSolutionScreen = React.memo(() => {
   const router = useRouter();
   const dispatch = useDispatch();
   const { index, answers } = useLocalSearchParams<{ index?: string; answers?: string }>();
   const quiz = useSelector((state: RootState) => state.quiz.currentQuiz);
+  // console.log("Quiz : ",quiz)
   const solutionSelectedQuestionId = useSelector((state: RootState) => state.solution.selectedQuestionId);
   const [currentQuestionBookmarkStatus, setcurrentQuestionBookmarkStatus] = useState(false);
 
@@ -92,7 +94,6 @@ const QuizSolutionScreen = React.memo(() => {
   }, [parsedAnswers, currentQuestion]);
 
   // Memoized navigation handlers
-  const handleBack = useCallback(() => router.back(), [router]);
   const handlePrev = useCallback(() =>
     setCurrentIndex(prev => Math.max(prev - 1, 0)), []);
   const handleNext = useCallback(() =>
@@ -115,23 +116,59 @@ const QuizSolutionScreen = React.memo(() => {
         ? [styles.optionUnattempted, styles.optionUnattemptedCorrect]
         : styles.optionUnattempted;
     }
-    if (userAnswer === option.id) {
-      return option.isCorrect ? styles.optionCorrect : styles.optionWrong;
+
+    if (currentQuestion.type === 'Numeric') {
+      // For numeric questions, compare the text values directly
+      const isCorrect = userAnswer === option.text;
+      return isCorrect ? styles.optionCorrect : styles.optionDefault;
+    } else if (currentQuestion.type === 'MMCQ') {
+      // For MMCQ, check if this option was selected and whether it's correct
+      const wasSelected = Array.isArray(userAnswer) && userAnswer.includes(option.id);
+      if (wasSelected) {
+        return option.isCorrect ? styles.optionCorrect : styles.optionWrong;
+      }
+      return option.isCorrect ? styles.optionCorrect : styles.optionDefault;
+    } else {
+      // Default MCQ handling
+      if (userAnswer === option.id) {
+        return option.isCorrect ? styles.optionCorrect : styles.optionWrong;
+      }
+      return option.isCorrect ? styles.optionCorrect : styles.optionDefault;
     }
-    return option.isCorrect ? styles.optionCorrect : styles.optionDefault;
-  }, [userAnswer]);
+  }, [userAnswer, currentQuestion?.type]);
+
+  const shouldShowAsCorrect = useCallback((option: any) => {
+    if (currentQuestion.type === 'Numeric') {
+      return userAnswer === option.text;
+    } else if (currentQuestion.type === 'MMCQ') {
+      return Array.isArray(userAnswer)
+        ? userAnswer.includes(option.id) && option.isCorrect
+        : false;
+    } else {
+      return userAnswer === option.id && option.isCorrect;
+    }
+  }, [userAnswer, currentQuestion?.type]);
+
+  // Function to determine if an option should show as wrong for the current user answer
+  const shouldShowAsWrong = useCallback((option: any) => {
+    if (currentQuestion.type === 'Numeric') {
+      return false; // Numeric only shows correct or default
+    } else if (currentQuestion.type === 'MMCQ') {
+      return Array.isArray(userAnswer)
+        ? userAnswer.includes(option.id) && !option.isCorrect
+        : false;
+    } else {
+      return userAnswer === option.id && !option.isCorrect;
+    }
+  }, [userAnswer, currentQuestion?.type]);
 
   const isFirstQuestion = currentIndex === 0;
   const isLastQuestion = currentIndex === allQuestions.length - 1;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Solutions</Text>
-      </View>
+      <AppHeader screenTitle="Quiz Solutions" onBackPress={() => router.back()} />
+
 
       <View style={styles.contentContainer}>
 
@@ -195,46 +232,98 @@ const QuizSolutionScreen = React.memo(() => {
           </View>
 
           <View style={styles.optionsContainer}>
-            {currentQuestion.options.map((option: any, idx: number) => {
-              const isSelected = userAnswer === option.id;
-              const isCorrect = option.isCorrect;
-              const isUserCorrect = isSelected && isCorrect;
-              const isWrong = isSelected && !isCorrect;
+            {currentQuestion.type === 'Numeric' ? (
+              <View style={styles.numericContainer}>
+                {/* Show user's answer only if it's wrong */}
+                {userAnswer && userAnswer !== correctOption?.text && (
+                  <View style={[styles.optionButton, styles.optionWrong]}>
+                    <View style={styles.optionContent}>
+                      <View style={[styles.optionLabelCircle, { backgroundColor: '#F44336' }]}>
+                        <Ionicons name="close" size={20} color="#fff" />
+                      </View>
+                      <Text style={styles.optionText}>
+                        Your answer: {userAnswer}
+                      </Text>
+                    </View>
+                  </View>
+                )}
 
-              return (
-                <View key={option.id} style={[styles.optionButton, getOptionStyle(option)]}>
+                {/* Correct answer - show with different styling based on attempt status */}
+                <View style={[
+                  styles.optionButton,
+                  userAnswer === correctOption?.text ? styles.optionCorrect :
+                    userAnswer ? styles.optionCorrectWithoutTick : styles.optionUnattemptedCorrect
+                ]}>
                   <View style={styles.optionContent}>
                     <View style={[
                       styles.optionLabelCircle,
-                      isUserCorrect && { backgroundColor: '#3ec170' },
-                      isWrong && { backgroundColor: '#F44336' },
-                      !userAnswer && getOptionStyle(option) === styles.optionUnattemptedCorrect && { backgroundColor: '#3ec17022' },
+                      userAnswer === correctOption?.text ? { backgroundColor: '#3ec170' } :
+                        { backgroundColor: '#3ec17022' }
                     ]}>
-                      {isUserCorrect ? (
+                      {userAnswer === correctOption?.text && (
                         <Ionicons name="checkmark" size={20} color="#fff" />
-                      ) : isWrong ? (
-                        <Ionicons name="close" size={20} color="#fff" />
-                      ) : (
-                        <Text style={styles.optionLabelText}>{getOptionLabel(idx)}</Text>
                       )}
                     </View>
-                    {option.text?.includes('$') || option.text?.includes('\\') ? (
-                      <KatexRendered content={option.text} style={styles.mathView} />
-                    ) : (
-                      <Text style={styles.optionText}>{option.text}</Text>
-                    )}
-                    {option.imageUrl && (
-                      <Image
-                        source={{ uri: option.imageUrl }}
-                        style={styles.optionImage}
-                        resizeMode="contain"
-                      />
-                    )}
+                    <Text style={styles.optionText}>
+                      Correct answer: {correctOption?.text}
+                    </Text>
                   </View>
                 </View>
-              );
-            })}
-            {!userAnswer && (
+              </View>
+            ) : (
+              currentQuestion.options.map((option: any, idx: number) => {
+                const isCorrectOption = option.isCorrect;
+                const isUserSelected = userAnswer && userAnswer.includes(option.id);
+                const isUserCorrect = isCorrectOption && isUserSelected;
+                const isUserWrong = !isCorrectOption && isUserSelected;
+                const showAsCorrectAnswer = isCorrectOption && (!userAnswer || (userAnswer && !isUserSelected));
+
+                return (
+                  <View key={option.id} style={[
+                    styles.optionButton,
+                    isUserCorrect && styles.optionCorrect,
+                    isUserWrong && styles.optionWrong,
+                    showAsCorrectAnswer && styles.optionCorrectWithoutTick,
+                    !userAnswer && !isCorrectOption && styles.optionUnattempted
+                  ]}>
+                    <View style={styles.optionContent}>
+                      <View style={[
+                        styles.optionLabelCircle,
+                        isUserCorrect && { backgroundColor: '#3ec170' },
+                        isUserWrong && { backgroundColor: '#F44336' },
+                        showAsCorrectAnswer && { backgroundColor: '#3ec17022' },
+                      ]}>
+                        {isUserCorrect ? (
+                          <Ionicons name="checkmark" size={20} color="#fff" />
+                        ) : isUserWrong ? (
+                          <Ionicons name="close" size={20} color="#fff" />
+                        ) : (
+                          <Text style={[
+                            styles.optionLabelText,
+                            showAsCorrectAnswer && { color: '#3ec170' }
+                          ]}>
+                            {getOptionLabel(idx)}
+                          </Text>
+                        )}
+                      </View>
+                      {option.text?.includes('$') || option.text?.includes('\\') ? (
+                        <KatexRendered content={option.text} style={styles.mathView} />
+                      ) : (
+                        <Text style={styles.optionText}>{option.text}</Text>
+                      )}
+                      {option.imageUrl && (
+                        <Image
+                          source={{ uri: option.imageUrl }}
+                          style={styles.optionImage}
+                          resizeMode="contain"
+                        />
+                      )}
+                    </View>
+                  </View>
+                );
+              })
+            )}
+            {!userAnswer && currentQuestion.type !== 'Numeric' && (
               <View style={styles.unattemptedContainer}>
                 <Text style={styles.unattemptedText}>Unattempted</Text>
               </View>
@@ -294,24 +383,6 @@ const QuizSolutionScreen = React.memo(() => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb'
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center', // Center icon horizontally
-  },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: '#1f2937' },
   contentContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 10 },
   questionHeader: {
     flexDirection: 'row',
@@ -346,7 +417,26 @@ const styles = StyleSheet.create({
   questionText: { fontSize: 16, lineHeight: 24, color: '#333', flex: 1, flexWrap: 'wrap' },
   questionImage: { width: '100%', height: 200, marginTop: 12, borderRadius: 4 },
   mathView: { width: '100%' },
-  optionsContainer: { marginBottom: 24 },
+  optionsContainer: {
+    marginBottom: 24,
+  },
+  numericContainer: {
+    gap: 12,
+  },
+  numericAnswerBox: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#fff',
+  },
+  neutralAnswer: {  // For correct answer when user was wrong
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f9f9f9',
+  },
+  unattemptedAnswer: {  // For correct answer when not attempted
+    borderColor: '#bdbdbd',
+    backgroundColor: '#f3f4f6',
+  },
   optionButton: {
     padding: 16,
     marginBottom: 12,
@@ -355,7 +445,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
-  optionContent: { flexDirection: 'row', alignItems: 'center' },
+  optionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   optionLabelCircle: {
     width: 28,
     height: 28,
@@ -365,16 +458,68 @@ const styles = StyleSheet.create({
     marginRight: 12,
     backgroundColor: '#6366f1',
   },
-  optionLabelText: { fontWeight: 'bold', color: '#fff', fontSize: 16 },
-  optionText: { fontSize: 15, color: '#22223b', flexShrink: 1, textAlignVertical: 'center' },
-  optionImage: { width: '100%', height: 150 },
-  optionCorrect: { borderColor: '#3ec170', backgroundColor: '#e6f9f0' },
-  optionWrong: { borderColor: '#F44336', backgroundColor: '#fde8e8' },
-  optionDefault: { borderColor: '#e5e7eb', backgroundColor: '#fff' },
-  optionUnattempted: { borderColor: '#bdbdbd', backgroundColor: '#f3f4f6' },
-  optionUnattemptedCorrect: { borderColor: '#3ec170', backgroundColor: '#f0fff4' },
-  unattemptedContainer: { alignItems: 'center', marginTop: 8 },
-  unattemptedText: { color: '#bdbdbd', fontStyle: 'italic', fontSize: 14 },
+  optionLabelText: {
+    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 16,
+  },
+  optionText: {
+    fontSize: 15,
+    color: '#22223b',
+    flexShrink: 1,
+    textAlignVertical: 'center',
+  },
+  optionImage: {
+    width: '100%',
+    height: 150,
+    marginTop: 8,
+    borderRadius: 4,
+  },
+  correctAnswer: {
+    borderColor: '#3ec170',
+    backgroundColor: '#e6f9f0',
+  },
+  wrongAnswer: {
+    borderColor: '#F44336',
+    backgroundColor: '#fde8e8',
+  },
+  optionCorrect: {
+    borderColor: '#3ec170',
+    backgroundColor: '#e6f9f0',
+  },
+  optionWrong: {
+    borderColor: '#F44336',
+    backgroundColor: '#fde8e8',
+  },
+  optionDefault: {
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  optionUnattempted: {
+    borderColor: '#bdbdbd',
+    backgroundColor: '#f3f4f6',
+  },
+  optionUnattemptedCorrect: {
+    borderColor: '#3ec170',
+    backgroundColor: '#f0fff4',
+  },
+  unattemptedContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  optionCorrectWithoutTick: {
+    borderColor: '#3ec170',
+    backgroundColor: '#e6f9f0',
+  },
+  optionLabelTextCorrect: {
+    color: '#3ec170',
+    fontWeight: 'bold',
+  },
+  unattemptedText: {
+    color: '#bdbdbd',
+    fontStyle: 'italic',
+    fontSize: 14,
+  },
   explanationContainer: { backgroundColor: '#f0f9ff', borderRadius: 8, padding: 16, marginBottom: 16, maxHeight: 220 },
   explanationScroll: { maxHeight: 180 },
   explanationTitle: { fontSize: 16, fontWeight: '600', color: '#4F46E5', marginBottom: 8 },

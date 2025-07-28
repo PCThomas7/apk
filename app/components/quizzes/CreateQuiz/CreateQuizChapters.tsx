@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../../header';
 
 type Params = {
   examType?: string;
@@ -82,12 +83,7 @@ const CreateQuizChapters = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={router.back} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Quiz - Chapters</Text>
-      </View>
+            <AppHeader screenTitle='Create Quiz - Chapters' onBackPress={() => router.back()} />
 
       <View style={styles.container}>
         {/* Subject Dropdown */}
@@ -215,28 +211,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#111827',
   },
   container: {
     flex: 1,

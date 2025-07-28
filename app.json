@@ -4,7 +4,7 @@
     "slug": "Chaithanya",
     "version": "1.0.0",
     "orientation": "default",  
-    "icon": "./assets/images/appIcon_1024x1024.png",
+    "icon": "./assets/images/appicon/appicon.png",
     "scheme": "Chaithanya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/appIcon_1024x1024.png",
+        "foregroundImage": "./assets/images/appicon/appicon.png",
         "backgroundColor": "#ffffff"
       },
       "navigationBar": {
@@ -31,7 +31,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon/favicon.png"
     },
    "plugins": [
   "expo-router",
@@ -39,7 +39,8 @@
     "expo-splash-screen",
     {
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "image": "./assets/images/splashScreen/splashscreenIcon.png"
     }
   ]
 ],
@@ -51,7 +52,8 @@
     "extra": {
       "router": {
         "origin": false
-      }
+      },
+       "BASEURL": "https://dev.professorpcthomas.com/api"
     }
   }
 }

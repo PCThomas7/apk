@@ -766,7 +766,7 @@ interface QuizQuestion {
   id: string;
   text: string;
   options: QuizOption[];
-  type: 'MCQ' | 'TrueFalse' | 'ShortAnswer' | 'MNCQ';
+  type: 'MCQ' | 'Numeric' | 'MMCQ';
   selectedOption?: string | null;
   markedForReview: boolean;
   imageUrl?: string;
@@ -796,7 +796,7 @@ interface QuizData {
   timeLimit: number;
   passingScore: number;
   sections: QuizSection[];
-   createdAt?: string;
+  createdAt?: string;
 }
 
 interface QuizAttemptState {
@@ -909,31 +909,81 @@ export const fetchQuiz = createAsyncThunk(
           name: section.name,
           marksPerQuestion: section.marks_per_question,
           negativeMarks: section.negative_marks,
-          questions: section.questions.map(question => ({
-            id: question._id || question.id,
-            text: question.question_text,
-            options: [
-              { id: 'A', text: question.option_a, isCorrect: question.correct_answer === 'A', imageUrl: question.option_a_image_url },
-              { id: 'B', text: question.option_b, isCorrect: question.correct_answer === 'B', imageUrl: question.option_b_image_url },
-              { id: 'C', text: question.option_c, isCorrect: question.correct_answer === 'C', imageUrl: question.option_c_image_url },
-              { id: 'D', text: question.option_d, isCorrect: question.correct_answer === 'D', imageUrl: question.option_d_image_url },
-              ...(question.option_e ? [{ id: 'E', text: question.option_e, isCorrect: question.correct_answer === 'E', imageUrl: question.option_e_image_url }] : [])
-            ].filter(opt => opt.text),
-            type: question.tags?.question_type === 'MCQ' ? 'MCQ' :
-              question.tags?.question_type === 'TrueFalse' ? 'TrueFalse' :
-                question.tags?.question_type === 'ShortAnswer' ? 'ShortAnswer' : 'MNCQ',
-            imageUrl: question.image_url,
-            explanation: question.explanation,
-            marks: section.marks_per_question,
-            negativeMarks: section.negative_marks,
-            tags: {
-              subject: question.tags?.subject || 'Physics',
-              chapter: question.tags?.chapter || 'Unknown',
-              topic: question.tags?.topic || 'General',
-              difficulty: question.tags?.difficulty_level || 'Medium'
-            },
-            markedForReview: false
-          }))
+          questions: section.questions.map(question => {
+            // Determine question type
+            const questionType = question.tags?.question_type === 'MCQ' ? 'MCQ' :
+              question.tags?.question_type === 'MMCQ' ? 'MMCQ' :
+                question.tags?.question_type === 'Numeric' ? 'Numeric' : 'MCQ';
+
+            // Handle options differently based on question type
+            let options = [];
+            if (questionType === 'Numeric') {
+              // For numeric questions, we might just need the correct answer value
+              // Adjust this based on how your numeric answers are stored
+              options = [
+                {
+                  id: 'A',
+                  text: question.correct_answer, // or question.option_a if that's where numeric answer is stored
+                  isCorrect: true,
+                  imageUrl: question.option_a_image_url
+                }
+              ].filter(opt => opt.text !== undefined && opt.text !== null);
+            } else {
+              // For MCQ and MMCQ
+              options = [
+                {
+                  id: 'A', text: question.option_a, isCorrect: questionType === 'MMCQ'
+                    ? question.correct_answer.includes('A')
+                    : question.correct_answer === 'A',
+                  imageUrl: question.option_a_image_url
+                },
+                {
+                  id: 'B', text: question.option_b, isCorrect: questionType === 'MMCQ'
+                    ? question.correct_answer.includes('B')
+                    : question.correct_answer === 'B',
+                  imageUrl: question.option_b_image_url
+                },
+                {
+                  id: 'C', text: question.option_c, isCorrect: questionType === 'MMCQ'
+                    ? question.correct_answer.includes('C')
+                    : question.correct_answer === 'C',
+                  imageUrl: question.option_c_image_url
+                },
+                {
+                  id: 'D', text: question.option_d, isCorrect: questionType === 'MMCQ'
+                    ? question.correct_answer.includes('D')
+                    : question.correct_answer === 'D',
+                  imageUrl: question.option_d_image_url
+                },
+                ...(question.option_e ? [{
+                  id: 'E',
+                  text: question.option_e,
+                  isCorrect: questionType === 'MMCQ'
+                    ? question.correct_answer.includes('E')
+                    : question.correct_answer === 'E',
+                  imageUrl: question.option_e_image_url
+                }] : [])
+              ].filter(opt => opt.text);
+            }
+
+            return {
+              id: question._id || question.id,
+              text: question.question_text,
+              options,
+              type: questionType,
+              imageUrl: question.image_url,
+              explanation: question.explanation,
+              marks: section.marks_per_question,
+              negativeMarks: section.negative_marks,
+              tags: {
+                subject: question.tags?.subject || 'Physics',
+                chapter: question.tags?.chapter || 'Unknown',
+                topic: question.tags?.topic || 'General',
+                difficulty: question.tags?.difficulty_level || 'Medium'
+              },
+              markedForReview: false
+            };
+          })
         })),
         createdAt: quizData.createdAt
       };
@@ -982,12 +1032,25 @@ export const submitQuizThunk = createAsyncThunk(
       return rejectWithValue('Quiz not marked as submitted');
     }
 
-    // Build answers for all questions: answered => [answer], unanswered => []
+    // Build answers for all questions in the format the server expects
     const allAnswers: Record<string, string[]> = {};
+
     sections.forEach(section => {
       section.questions.forEach(question => {
-        const ans = answers[question.id];
-        allAnswers[question.id] = ans ? [ans] : [];
+        const answer = answers[question.id];
+
+        if (answer) {
+          // For MMCQ, split comma-separated values into array and remove duplicates
+          if (question.type === 'MMCQ') {
+            allAnswers[question.id] = [...new Set(answer.split(','))];
+          }
+          // For other types, use as single-item array
+          else {
+            allAnswers[question.id] = [answer];
+          }
+        } else {
+          allAnswers[question.id] = [];
+        }
       });
     });
 
@@ -1003,7 +1066,6 @@ export const submitQuizThunk = createAsyncThunk(
       incorrectAnswers: 0,
       unattemptedAnswers: 0
     };
-
     try {
       const response = await courseServicePost.submitQuizAttempt(quizId, attemptData);
       return response.data;
@@ -1041,8 +1103,38 @@ const quizSlice = createSlice({
     },
     selectOption(state, action: PayloadAction<{ questionId: string; optionId: string | null }>) {
       const { questionId, optionId } = action.payload;
-      if (state.currentQuiz) {
-        state.currentQuiz.attempt.answers[questionId] = optionId;
+      if (!state.currentQuiz) return;
+
+      const question = state.currentQuiz.sections
+        .flatMap(section => section.questions)
+        .find(q => q.id === questionId);
+
+      if (!question) return;
+
+      const currentAnswer = state.currentQuiz.attempt.answers[questionId];
+
+      switch (question.type) {
+        case 'MCQ': // Single selection (radio button)
+          // Toggle: if clicking the same option, deselect it
+          state.currentQuiz.attempt.answers[questionId] =
+            currentAnswer === optionId ? null : optionId;
+          break;
+
+        case 'MMCQ': // Multiple selection (checkboxes)
+          const currentSelections = currentAnswer ? currentAnswer.split(',') : [];
+          const newSelections = currentSelections.includes(optionId!)
+            ? currentSelections.filter(id => id !== optionId)
+            : [...currentSelections, optionId!];
+          state.currentQuiz.attempt.answers[questionId] =
+            newSelections.length > 0 ? newSelections.join(',') : null;
+          break;
+
+        case 'Numeric': // Direct value
+          state.currentQuiz.attempt.answers[questionId] = optionId;
+          break;
+
+        default:
+          break;
       }
     },
     markForReview(state, action: PayloadAction<string>) {
@@ -1065,25 +1157,25 @@ const quizSlice = createSlice({
         state.currentQuiz.attempt.visitedQuestions[questionId] = true;
       }
     },
-    updateTimeRemaining(state) {
-      if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
-        state.currentQuiz.attempt.timeRemaining -= 1;
-      }
-    },// if it have timing issues in background or use below updateTimeRemaining
-    // updateTimeRemaining: {
-    //   reducer(state, action: PayloadAction<number | undefined>) {
-    //     const secondsElapsed = action.payload ?? 1; // Default to 1 if undefined
-    //     if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
-    //       state.currentQuiz.attempt.timeRemaining = Math.max(
-    //         0,
-    //         state.currentQuiz.attempt.timeRemaining - secondsElapsed
-    //       );
-    //     }
-    //   },
-    //   prepare(seconds?: number) {
-    //     return { payload: seconds };
+    // updateTimeRemaining(state) {
+    //   if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
+    //     state.currentQuiz.attempt.timeRemaining -= 1;
     //   }
-    // },
+    // },// if it have timing issues in background or use below updateTimeRemaining
+    updateTimeRemaining: {
+      reducer(state, action: PayloadAction<number | undefined>) {
+        const secondsElapsed = action.payload ?? 1; // Default to 1 if undefined
+        if (state.currentQuiz && state.currentQuiz.attempt.timeRemaining > 0) {
+          state.currentQuiz.attempt.timeRemaining = Math.max(
+            0,
+            state.currentQuiz.attempt.timeRemaining - secondsElapsed
+          );
+        }
+      },
+      prepare(seconds?: number) {
+        return { payload: seconds };
+      }
+    },
     submitQuiz(state) {
       if (state.currentQuiz) {
         state.currentQuiz.attempt.submitted = true;

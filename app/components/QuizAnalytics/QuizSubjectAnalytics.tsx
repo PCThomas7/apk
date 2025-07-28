@@ -15,6 +15,7 @@ import {
   selectOverallPerformance,
 } from '../../../redux/slices/quizAnalyticsSlice';
 import { SubjectPerformance } from '../../../redux/slices/quizAnalyticsSlice';
+import AppHeader from '../header';
 
 // Helper: Convert seconds to H M S format
 const formatTime = (seconds: number = 0): string => {
@@ -29,10 +30,6 @@ const QuizAnalytics = () => {
   const dispatch = useDispatch();
   const subjectData = useSelector(selectSubjectWisePerformance);
   const overallPerformanceData = useSelector(selectOverallPerformance);
-
-  const handleBack = () => {
-    router.back();
-  };
 
   const handleChapterwiseNavigate = (subject: string) => {
     router.push(`/components/QuizAnalytics/QuizChapterAnalytics?subject=${subject}`);
@@ -62,12 +59,7 @@ const QuizAnalytics = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quiz Analytics</Text>
-      </View>
+      <AppHeader screenTitle="Ask a Doubt" onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.overviewTitle}>Subject-wise Performance</Text>
@@ -123,29 +115,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    elevation: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1E293B',
   },
   scrollContainer: {
     padding: 16,

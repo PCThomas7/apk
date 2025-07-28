@@ -15,6 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../../header';
 
 const CreateQuizTopics = () => {
   const router = useRouter();
@@ -63,9 +64,6 @@ const CreateQuizTopics = () => {
   const [distribution, setDistribution] = useState({ easy: 34, medium: 33, hard: 33 });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
 
   const times = [15, 30, 60];
   const difficulties = ['Easy', 'Medium', 'Hard'];
@@ -135,12 +133,7 @@ const CreateQuizTopics = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Custom Quiz</Text>
-        </View>
+        <AppHeader screenTitle='Create Custom Quizz' onBackPress={() => router.back()} />
 
         <View style={styles.content}>
           {/* Selected Subjects and Chapters Preview */}
@@ -280,27 +273,6 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
   },
   content: {
     padding: 20,

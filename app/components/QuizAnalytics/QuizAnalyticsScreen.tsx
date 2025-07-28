@@ -8,6 +8,7 @@ import {
   fetchQuizReport,
   clearQuizReport,
 } from '../../../redux/slices/quizAnalyticsSlice';
+import AppHeader from '../header';
 
 // Define type
 interface AnalyticsOption {
@@ -40,10 +41,6 @@ const QuizAnalyticsScreen = () => {
     };
   }, [quizId]);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
-
   const handleOptionPress = (path: (typeof analyticsOptions)[number]['route']) => {
     router.push(path as any);
   };
@@ -51,12 +48,7 @@ const QuizAnalyticsScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'right', 'left']}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quiz Analytics</Text>
-      </View>
+       <AppHeader screenTitle="Quiz Analytics" onBackPress={() => router.back()} />
 
       {/* Scrollable Analytics Cards */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -89,27 +81,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
   },
   scrollContent: {
     padding: 16,

@@ -16,6 +16,7 @@ import {
   selectAnalyticsLoading,
   fetchStudentAnalytics,
 } from '../../../redux/slices/analyticsSlice';
+import AppHeader from '../../components/header';
 
 const PerformanceOverview = () => {
   const router = useRouter();
@@ -28,7 +29,6 @@ const PerformanceOverview = () => {
     dispatch(fetchStudentAnalytics());
   }, [dispatch]);
 
-  const handleBack = () => router.back();
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', {
@@ -45,13 +45,7 @@ const PerformanceOverview = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Performance Overview</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <AppHeader screenTitle="Performance Overview" onBackPress={() => router.back()} />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -123,33 +117,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  headerRight: {
-    width: 40,
-  },
+  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

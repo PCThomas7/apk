@@ -6,18 +6,14 @@ import { useRouter } from 'expo-router';
 import { useAppSelector } from '../../../redux/hooks';
 import { selectSubjectPerformance } from '../../../redux/slices/analyticsSlice';
 import { PieChart } from 'react-native-chart-kit';
+import AppHeader from '../../components/header';
 
 const SubjectAnalysis = () => {
   const router = useRouter();
   const subjectPerformance = useAppSelector(selectSubjectPerformance);
-  console.log("subjectPerformance :",subjectPerformance)
   const [selectedSubject, setSelectedSubject] = useState(subjectPerformance?.[0]?.subject || '');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  const handleBack = () => {
-    router.back();
-  };
 
   const toggleDropdown = () => {
     Animated.timing(rotateAnim, {
@@ -46,12 +42,7 @@ const SubjectAnalysis = () => {
   if (!subjectPerformance || subjectPerformance.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Subject Analysis</Text>
-        </View>
+        <AppHeader screenTitle="Subject Analysis" onBackPress={() => router.back()} />
         <View style={styles.container}>
           <Text>No subject data available</Text>
         </View>
@@ -83,12 +74,7 @@ const SubjectAnalysis = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right','bottom']}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subject Analysis</Text>
-      </View>
+       <AppHeader screenTitle="Subject Analysis" onBackPress={() => router.back()} />
 
       {/* Content */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -216,28 +202,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
   },
   scrollContainer: {
     padding: 16,

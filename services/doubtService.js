@@ -12,6 +12,10 @@ const doubtService = {
         return response.data;
     },
 
-    
+     createDoubt: async (params) => {
+        const response = await api.post(`/doubts`, params);
+        return response.data;
+    },
+
 }
 export default doubtService;

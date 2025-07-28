@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import ResponsiveGridSkeleton from '../skeltons/Skelton';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../header';
 
 const CourseLesson = () => {
     const router = useRouter();
@@ -33,13 +34,10 @@ const CourseLesson = () => {
         fetchLessons();
     }, [chapterId]);
 
-    const handleBack = () => router.back();
-
     // Helper to get progress for a lesson
     const getProgressForLesson = (lessonId: string) => {
         return progressData.find((p: any) => p.lessonId === lessonId);
     };
-
 
     // Helper to get percentage
     const getPercentage = (progress: any) => {
@@ -147,12 +145,7 @@ const CourseLesson = () => {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Course Lessons</Text>
-            </View>
+            <AppHeader screenTitle='Course Lessons' onBackPress={() => router.back()} />
             <View style={styles.container}>
                 {loading ? (
                     <ResponsiveGridSkeleton />
@@ -268,28 +261,6 @@ const CourseLesson = () => {
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#fff' },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1f2937',
-        flex: 1,
-    },
     container: {
         flex: 1,
         padding: 16,

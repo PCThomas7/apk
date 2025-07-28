@@ -66,11 +66,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Image, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, Dimensions } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from 'react-redux';
 import { store } from '../redux/store';
+import NotificationBanner from '../app/components/NotificationBanner';
+import { useNotificationHandler } from '../hooks/useNotificationHandler';
 
 SplashScreen.preventAutoHideAsync(); // ✅ Prevent splash from auto-hiding
 
@@ -81,6 +83,7 @@ export default function RootLayout() {
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [appIsReady, setAppIsReady] = useState(false);
+  const { notification, setNotification } = useNotificationHandler()
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -88,8 +91,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // const token = await SecureStore.getItemAsync('authToken');
+      // setIsLoggedIn(!!token); 
       const token = await SecureStore.getItemAsync('authToken');
-      setIsLoggedIn(!!token); 
+      const loggedIn = !!token;
+      setIsLoggedIn(loggedIn);
+
       setIsAuthChecked(true);
     };
     checkAuth();
@@ -107,53 +114,68 @@ export default function RootLayout() {
   if (!loaded || !isAuthChecked || !appIsReady) {
     return (
       <View style={styles.container}>
+        <View style={styles.overlay} />
+
         <Image
-          source={require('../assets/images/appIcon_1024x1024.png')}
-          style={styles.icon}
-        />
-        <Image
-          source={require('../assets/images/splash-icon.png')}
+          source={require('../assets/images/splashScreen/splashscreenIcon.png')}
           style={styles.splashImage}
+          resizeMode="contain"
         />
       </View>
     );
   }
 
   return (
-     <Provider store={store}> {/* ✅ Redux Provider */}
-    <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 } , animation: 'none' }}>
-          {isLoggedIn ? (
-            <Stack.Screen name="(tabs)" />
-          ) : (
-            <Stack.Screen name="Auth" />
+    <Provider store={store}> {/* ✅ Redux Provider */}
+      <SafeAreaProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          {notification && (
+            <NotificationBanner
+              title={notification.title}
+              body={notification.body}
+              color={notification.color}
+              lessonId={notification.lessonId}
+              courseId={notification.courseId}
+              action={notification.action}
+              onJoinLive={(lessonId, courseId) => {
+                setNotification(null);
+                // if (lessonId) {
+                //   router.push(`/lesson/${lessonId}?courseId=${courseId}`);
+                // }
+              }}
+              onDismiss={() => setNotification(null)}
+            />
           )}
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </ThemeProvider>
-    </SafeAreaProvider>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 }, animation: 'none' }}>
+            {isLoggedIn ? (
+              <Stack.Screen name="(tabs)" />
+            ) : (
+              <Stack.Screen name="Auth" />
+            )}
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </ThemeProvider>
+      </SafeAreaProvider>
     </Provider>
   );
 }
+const window = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000', // Dark background for better contrast
   },
-  icon: {
-    width: 120,
-    height: 120,
-    resizeMode: 'contain',
-    marginBottom: 20,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#ffffff', // Semi-transparent dark overlay
   },
   splashImage: {
-    width: 200,
-    height: 100,
-    resizeMode: 'contain',
+    width: window.width * 0.9, // 90% of screen width
+    height: window.height * 0.9, // 90% of screen height
+    transform: [{ scale: 2 }], // Slightly scale up the image
   },
 });

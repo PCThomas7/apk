@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,7 +13,6 @@ type DropdownProps = {
   selectedOption: string | null;
   onSelect: (option: string) => void;
   placeholder?: string;
-  label?: string;
 };
 
 const Dropdown = ({
@@ -21,11 +20,10 @@ const Dropdown = ({
   selectedOption,
   onSelect,
   placeholder = 'Select an option',
-  label
 }: DropdownProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  const toggleDropdown = () => setIsVisible(prev => !prev);
+  const toggleDropdown = () => setIsVisible((prev) => !prev);
 
   const handleSelect = (option: string) => {
     onSelect(option);
@@ -34,16 +32,23 @@ const Dropdown = ({
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-
       <TouchableOpacity
         style={styles.dropdownHeader}
         onPress={toggleDropdown}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`Dropdown: ${placeholder}`}
+        accessibilityState={{ expanded: isVisible }}
       >
-        <Text style={selectedOption ? styles.headerTextSelected : styles.headerText}>
-          {selectedOption || placeholder}
-        </Text>
+        <View style={styles.headerTextWrapper}>
+          <Text
+            style={selectedOption ? styles.headerTextSelected : styles.headerText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {selectedOption || placeholder}
+          </Text>
+        </View>
         <Ionicons
           name={isVisible ? 'chevron-up' : 'chevron-down'}
           size={20}
@@ -56,10 +61,10 @@ const Dropdown = ({
           <ScrollView style={styles.dropdownScroll}>
             {options.map((item, index) => (
               <TouchableOpacity
-                key={index}
+                key={`${item}-${index}`}
                 style={[
                   styles.dropdownItem,
-                  selectedOption === item && styles.dropdownItemSelected
+                  selectedOption === item && styles.dropdownItemSelected,
                 ]}
                 onPress={() => handleSelect(item)}
               >
@@ -79,13 +84,7 @@ const Dropdown = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
-    zIndex: 10, // make sure it renders above charts or other elements
-  },
-  label: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-    fontWeight: '500',
+    zIndex: 10,
   },
   dropdownHeader: {
     flexDirection: 'row',
@@ -96,6 +95,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
+  },
+  headerTextWrapper: {
+    flex: 1,
+    marginRight: 8, // prevent text from overlapping with chevron
   },
   headerText: {
     fontSize: 16,
@@ -114,6 +117,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     maxHeight: 200,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   dropdownScroll: {
     maxHeight: 200,
@@ -132,6 +139,8 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 16,
     color: '#111827',
+    flex: 1,
+    marginRight: 8,
   },
 });
 

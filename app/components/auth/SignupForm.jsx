@@ -315,6 +315,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import axios from 'axios'
+import authService from '../../../services/authService'
 
 export default function SignupForm({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -378,6 +379,8 @@ export default function SignupForm({ onSwitchToLogin }) {
 const handleSignup = async () => {
   if (!validateForm()) return;
   setIsLoading(true);
+
+  await authService.register(formData.email, formData.name, formData.password, )
 
   try {
     const res = await axios.post("http://192.168.10.42:5000/api/auth/register", {

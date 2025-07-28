@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
   FlatList,
   ActivityIndicator,
   RefreshControl
@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import courseServiceGet from '@/services/courseServiceGet';
+import AppHeader from '../../header';
 
 const CreateQuizList = () => {
   const router = useRouter();
@@ -38,12 +39,8 @@ const CreateQuizList = () => {
     fetchQuizzes();
   }, [fetchQuizzes]);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
-
   const handleCreateQuiz = () => {
-    router.replace('/components/quizzes/CreateQuiz/CreateQuizExamType'); 
+    router.replace('/components/quizzes/CreateQuiz/CreateQuizExamType');
   };
 
   const handleTakeQuiz = (quizId: string) => {
@@ -89,10 +86,10 @@ const CreateQuizList = () => {
             <Text style={styles.metaText}>{item.timeLimit} mins</Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons 
-              name={item.attempted ? "checkmark-circle" : "close-circle"} 
-              size={16} 
-              color={item.attempted ? "#10B981" : "#EF4444"} 
+            <Ionicons
+              name={item.attempted ? "checkmark-circle" : "close-circle"}
+              size={16}
+              color={item.attempted ? "#10B981" : "#EF4444"}
             />
             <Text style={[styles.metaText, { color: item.attempted ? "#10B981" : "#EF4444" }]}>
               {item.attempted ? "Attempted" : "Not Attempted"}
@@ -100,7 +97,7 @@ const CreateQuizList = () => {
           </View>
         </View>
       </View>
-      
+
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -132,12 +129,7 @@ const CreateQuizList = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-       <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Quizzes</Text>
-        </View>
+      <AppHeader screenTitle='My Quizzes' onBackPress={() => router.back()} />
 
       <FlatList
         data={quizzes}
@@ -148,8 +140,8 @@ const CreateQuizList = () => {
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={48} color="#9CA3AF" />
             <Text style={styles.emptyText}>You haven't created any quizzes yet</Text>
-            <TouchableOpacity 
-              style={styles.createButton} 
+            <TouchableOpacity
+              style={styles.createButton}
               onPress={handleCreateQuiz}
               activeOpacity={0.8}
             >
@@ -175,27 +167,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-  },
- header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb'
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center', // Center icon horizontally
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937'
   },
   loadingContainer: {
     flex: 1,

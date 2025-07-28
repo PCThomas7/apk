@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CommunityService from '../../../services/communityService';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
+import AppHeader from '../../components/header';
 
 interface Post {
     _id: string;
@@ -29,8 +30,6 @@ interface Post {
 const { width } = Dimensions.get('window');
 
 const Community = () => {
-    const navigation = useNavigation();
-    const screenTitle = 'Community';
     const router = useRouter();
 
     const [posts, setPosts] = useState<Post[]>([]);
@@ -43,7 +42,6 @@ const Community = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [error, setError] = useState<string | null>(null);
 
-    const handleBack = () => navigation.goBack();
 
     const fetchPosts = useCallback(
         async (reset: boolean = false, customPage: number | null = null) => {
@@ -266,18 +264,7 @@ const Community = () => {
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
             <View style={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        onPress={handleBack}
-                        style={styles.backButton}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{screenTitle}</Text>
-                    <View style={{ width: 40 }} /> {/* Spacer for alignment */}
-                </View>
+                <AppHeader screenTitle="Community" onBackPress={() => router.back()} />
 
                 {/* Search Bar */}
                 <View style={styles.searchBarContainer}>
@@ -376,27 +363,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#ffffff',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb'
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center', // Center icon horizontally
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1f2937'
     },
     searchBarContainer: {
         flexDirection: 'row',

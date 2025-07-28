@@ -4,6 +4,7 @@ const courseServicePost = {
   submitQuizAttempt: async (quizId, attemptData) => {
     try {
       const response = await api.post(`/quizzes/${quizId}/attempts`, attemptData);
+      console.log("testing : ",response)
       return response.data;
     } catch (error) {
       console.error("Error submitting quiz attempt:", error);

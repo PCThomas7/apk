@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { PieChart } from 'react-native-chart-kit';
 import { useAppSelector } from '../../../redux/hooks';
 import { selectQuestionTypePerformance } from '../../../redux/slices/analyticsSlice';
+import AppHeader from '../../components/header';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -24,7 +25,6 @@ const QuestionTypes = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
-  const handleBack = () => router.back();
 
   const toggleDropdown = () => {
     Animated.timing(rotateAnim, {
@@ -63,12 +63,7 @@ const QuestionTypes = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Question Types</Text>
-      </View>
+       <AppHeader screenTitle="Question Types" onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Dropdown */}
@@ -186,18 +181,6 @@ const QuestionTypes = () => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#ffffff' },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20, fontWeight: '600', color: '#1f2937',
-  },
   scrollContainer: {
     padding: 16,
     paddingBottom: 24,

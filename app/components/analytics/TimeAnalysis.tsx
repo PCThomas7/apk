@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppSelector } from '../../../redux/hooks';
 import { selectTimeSpentAnalysis } from '../../../redux/slices/analyticsSlice';
+import AppHeader from '../../components/header';
 
 const TimeAnalysis = () => {
   const router = useRouter();
@@ -21,9 +22,6 @@ const TimeAnalysis = () => {
     averageTimePerQuestion: 0
   };
 
-  const handleBack = () => {
-    router.back();
-  };
 
  const formatTime = (seconds: number): string => {
   const safeSeconds = seconds || 0;
@@ -36,12 +34,7 @@ const TimeAnalysis = () => {
   if (!timeData || Object.keys(timeData).length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Time Analysis</Text>
-        </View>
+         <AppHeader screenTitle="Time Analysis" onBackPress={() => router.back()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4F46E5" />
         </View>
@@ -65,13 +58,7 @@ const TimeAnalysis = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Time Analysis</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <AppHeader screenTitle="Time Analysis" onBackPress={() => router.back()} />
 
       {/* Content */}
       <ScrollView 
@@ -148,30 +135,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
   },
   headerRight: {
     width: 40,

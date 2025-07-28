@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../redux/store';
 import courseServiceGet from '@/services/courseServiceGet';
 import ResponsiveGridSkeleton from '../skeltons/Skelton';
+import AppHeader from '../header';
 
 interface Course {
     id: string;
@@ -59,7 +60,6 @@ const CourseAnalytics = () => {
         fetchAnalytics();
     }, [courseId]);
 
-    const handleBack = () => router.back();
 
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return 'Not started';
@@ -80,12 +80,7 @@ const CourseAnalytics = () => {
     if (isLoading) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Course Analytics</Text>
-                </View>
+                <AppHeader screenTitle='Course Analytics' onBackPress={() => router.back()} />
                 <ResponsiveGridSkeleton />
             </SafeAreaView>
         );
@@ -94,12 +89,7 @@ const CourseAnalytics = () => {
     if (!course) {
         return (
             <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Course Analytics</Text>
-                </View>
+                <AppHeader screenTitle='Course Analytics' onBackPress={() => router.back()} />
                 <View style={styles.errorContainer}>
                     <MaterialIcons name="error-outline" size={48} color="#EF4444" />
                     <Text style={styles.errorText}>Course not found</Text>
@@ -111,14 +101,7 @@ const CourseAnalytics = () => {
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
-                    Course Analytics
-                </Text>
-            </View>
+          <AppHeader screenTitle='Course Analytics' onBackPress={() => router.back()} />
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.container}>
@@ -170,11 +153,11 @@ const CourseAnalytics = () => {
                                             styles.progressBarFillSmall,
                                             {
                                                 width: `${analytics?.lessonTypeStats?.video?.total
-                                                        ? Math.round(
-                                                            ((analytics.lessonTypeStats.video.completed ?? 0) /
-                                                                analytics.lessonTypeStats.video.total) * 100
-                                                        )
-                                                        : 0
+                                                    ? Math.round(
+                                                        ((analytics.lessonTypeStats.video.completed ?? 0) /
+                                                            analytics.lessonTypeStats.video.total) * 100
+                                                    )
+                                                    : 0
                                                     }%`,
                                                 backgroundColor: '#38BDF8',
                                             },
@@ -200,11 +183,11 @@ const CourseAnalytics = () => {
                                             styles.progressBarFillSmall,
                                             {
                                                 width: `${analytics?.lessonTypeStats?.quiz?.total
-                                                        ? Math.round(
-                                                            ((analytics.lessonTypeStats.quiz.completed ?? 0) /
-                                                                analytics.lessonTypeStats.quiz.total) * 100
-                                                        )
-                                                        : 0
+                                                    ? Math.round(
+                                                        ((analytics.lessonTypeStats.quiz.completed ?? 0) /
+                                                            analytics.lessonTypeStats.quiz.total) * 100
+                                                    )
+                                                    : 0
                                                     }%`,
                                                 backgroundColor: '#FACC15',
                                             },
@@ -230,11 +213,11 @@ const CourseAnalytics = () => {
                                             styles.progressBarFillSmall,
                                             {
                                                 width: `${analytics?.lessonTypeStats?.pdf?.total
-                                                        ? Math.round(
-                                                            ((analytics.lessonTypeStats.pdf.completed ?? 0) /
-                                                                analytics.lessonTypeStats.pdf.total) * 100
-                                                        )
-                                                        : 0
+                                                    ? Math.round(
+                                                        ((analytics.lessonTypeStats.pdf.completed ?? 0) /
+                                                            analytics.lessonTypeStats.pdf.total) * 100
+                                                    )
+                                                    : 0
                                                     }%`,
                                                 backgroundColor: '#A3A3A3',
                                             },
@@ -293,28 +276,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1f2937',
-        flex: 1,
     },
     loadingContainer: {
         flex: 1,
@@ -424,7 +385,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#334155',
-        marginLeft:5,
+        marginLeft: 5,
     },
     cardSubText: {
         fontSize: 14,

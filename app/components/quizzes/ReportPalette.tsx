@@ -6,14 +6,15 @@ import { RootState } from '../../../redux/store';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { setSolutionSelectedQuestionId } from '../../../redux/slices/quizAttemptSlice';
+import AppHeader from '../header';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 64) / 5; // 5 items per row
 
 const QuestionStatus = {
-  CORRECT: 'correct',
-  WRONG: 'wrong',
-  UNATTEMPTED: 'unattempted'
+    CORRECT: 'correct',
+    WRONG: 'wrong',
+    UNATTEMPTED: 'unattempted'
 } as const;
 
 const ReportPalette: React.FC = () => {
@@ -21,7 +22,7 @@ const ReportPalette: React.FC = () => {
     const dispatch = useDispatch();
     const { answers } = useLocalSearchParams<{ answers?: string }>();
     const { currentQuiz } = useSelector((state: RootState) => state.quiz);
-
+    
     // Memoize parsed answers
     const parsedAnswers = useMemo(() => {
         try {
@@ -33,23 +34,66 @@ const ReportPalette: React.FC = () => {
     }, [answers]);
 
     // Memoize flattened questions
-    const allQuestions = useMemo(() => 
-        currentQuiz?.sections?.flatMap((section) => section.questions) || [], 
+    const allQuestions = useMemo(() =>
+        currentQuiz?.sections?.flatMap((section) => section.questions) || [],
         [currentQuiz]
     );
 
     // Memoize question status calculation
-    const getQuestionStatus = useCallback((question: any) => {
-        const userAns = parsedAnswers[question.id]?.[0];
-        if (!userAns) return QuestionStatus.UNATTEMPTED;
-        
-        const selectedOption = question.options.find((opt: any) => opt.id === userAns);
-        if (!selectedOption) return QuestionStatus.UNATTEMPTED;
-        
-        return selectedOption.isCorrect ? QuestionStatus.CORRECT : QuestionStatus.WRONG;
-    }, [parsedAnswers]);
+const getQuestionStatus = useCallback((question: any) => {
+    const userAnswer = parsedAnswers[question.id];
+    
+    // If no answer provided
+    if (!userAnswer || userAnswer.length === 0) {
+        return QuestionStatus.UNATTEMPTED;
+    }
 
-    const handleBack = useCallback(() => router.back(), [router]);
+    // Handle different question types
+    switch (question.type) {
+        case 'MCQ':
+            // For MCQ, we expect a single answer
+            const selectedOption = question.options.find((opt: any) => opt.id === userAnswer[0]);
+            if (!selectedOption) return QuestionStatus.UNATTEMPTED;
+            return selectedOption.isCorrect ? QuestionStatus.CORRECT : QuestionStatus.WRONG;
+
+        case 'Numeric':
+            // For Numeric, check if the user's answer matches any correct option's text
+            // Numeric questions typically have only one option with the correct value
+            const correctOption = question.options.find((opt: any) => opt.isCorrect);
+            if (!correctOption) return QuestionStatus.UNATTEMPTED;
+            
+            // Compare user's answer with correct option's text
+            // Trim and compare as strings to avoid floating point precision issues
+            const userAnswerValue = userAnswer[0]?.toString().trim();
+            const correctAnswerValue = correctOption.text?.toString().trim();
+            
+            return userAnswerValue === correctAnswerValue 
+                ? QuestionStatus.CORRECT 
+                : QuestionStatus.WRONG;
+
+        case 'MMCQ':
+            // For MMCQ, we need to check all selected options against correct answers
+            if (userAnswer.length === 0) return QuestionStatus.UNATTEMPTED;
+            
+            // Get all correct option IDs
+            const correctOptions = question.options
+                .filter((opt: any) => opt.isCorrect)
+                .map((opt: any) => opt.id);
+            
+            // Check if all selected options are correct and all correct options are selected
+            const allCorrect = userAnswer.every((ans: string) => 
+                correctOptions.includes(ans)
+            ) && correctOptions.every((corr: string) => 
+                userAnswer.includes(corr)
+            );
+            
+            return allCorrect ? QuestionStatus.CORRECT : QuestionStatus.WRONG;
+
+        default:
+            return QuestionStatus.UNATTEMPTED;
+    }
+}, [parsedAnswers]);
+
 
     const handleQuestionPress = useCallback((questionId: string) => {
         dispatch(setSolutionSelectedQuestionId(questionId));
@@ -67,24 +111,19 @@ const ReportPalette: React.FC = () => {
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
             <View style={styles.container}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Questions Palette</Text>
-                </View>
+                <AppHeader screenTitle="Question Palatte" onBackPress={() => router.back()} />
 
                 {/* Question Palette Grid */}
                 <View style={styles.paletteContainer}>
                     <View style={styles.gradientBackground} />
-                    <ScrollView 
+                    <ScrollView
                         contentContainerStyle={styles.paletteGrid}
                         removeClippedSubviews={true}
                     >
                         {allQuestions.map((q: any, idx: number) => {
                             const status = getQuestionStatus(q);
                             return (
-                                <QuestionItem 
+                                <QuestionItem
                                     key={q.id}
                                     id={q.id}
                                     index={idx}
@@ -100,7 +139,7 @@ const ReportPalette: React.FC = () => {
                 <View style={styles.legendSticky}>
                     <View style={styles.legendContainer}>
                         {legendItems.map((item) => (
-                            <LegendItem 
+                            <LegendItem
                                 key={item.status}
                                 color={item.color}
                                 text={item.text}
@@ -120,10 +159,10 @@ const QuestionItem = React.memo(({ id, index, status, onPress }: {
     status: string;
     onPress: (id: string) => void;
 }) => {
-    const iconName = status === QuestionStatus.CORRECT ? "check-circle" : 
-                     status === QuestionStatus.WRONG ? "close-circle" : "minus-circle";
-    const iconColor = status === QuestionStatus.CORRECT ? "#3ec170" : 
-                      status === QuestionStatus.WRONG ? "#F44336" : "#bdbdbd";
+    const iconName = status === QuestionStatus.CORRECT ? "check-circle" :
+        status === QuestionStatus.WRONG ? "close-circle" : "minus-circle";
+    const iconColor = status === QuestionStatus.CORRECT ? "#3ec170" :
+        status === QuestionStatus.WRONG ? "#F44336" : "#bdbdbd";
 
     return (
         <TouchableOpacity
@@ -144,11 +183,11 @@ const QuestionItem = React.memo(({ id, index, status, onPress }: {
                 ]}>
                     {index + 1}
                 </Text>
-                <MaterialCommunityIcons 
-                    name={iconName} 
-                    size={18} 
-                    color={iconColor} 
-                    style={styles.statusIcon} 
+                <MaterialCommunityIcons
+                    name={iconName}
+                    size={18}
+                    color={iconColor}
+                    style={styles.statusIcon}
                 />
             </View>
         </TouchableOpacity>
@@ -171,27 +210,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e5e7eb'
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1f2937'
     },
     paletteContainer: {
         flex: 1,

@@ -8,7 +8,9 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import axios from 'axios'
+import authService from '../../../services/authService'
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
 
 export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
   const [formData, setFormData] = useState({
@@ -53,21 +55,54 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
     }
   };
 
+  const getPushToken = async () => {
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+        sound: 'default'
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        handleRegistrationError('Permission not granted to get push token for push notification!');
+        return;
+      }
+      try {
+        // Get FCM device push token
+        const { data: fcmToken } = await Notifications.getDevicePushTokenAsync();
+        console.log('FCM Token:', fcmToken);
+        return fcmToken;
+      } catch (e) {
+        handleRegistrationError(`${e}`);
+      }
+    } else {
+      handleRegistrationError('Must use physical device for push notifications');
+    }
+  };
+
   const handleLogin = async () => {
     if (!validateForm()) return;
 
+    const pushToken = await getPushToken();
 
     setIsLoading(true);
-    console.log("email : ", formData.password)
 
     try {
-      const res = await axios.post("https://dev.professorpcthomas.com/api/auth/login", {
-        email: formData.email,
-        password: formData.password,
-      });
+      const res = await authService.login(formData.email, formData.password ,pushToken);
       const token = res.data.token;
+      const refreshToken = res.data.refreshToken
       const userDetails = res.data.user
-      onLoginSuccess(token,userDetails)
+      onLoginSuccess(token, refreshToken, userDetails)
     } catch (err) {
       console.error("Login failed:", err.response?.data || err);
     } finally {

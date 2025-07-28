@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import courseServiceGet from '@/services/courseServiceGet';
 import KatexRendered from '../../components/quizzes/KatexRenderer';
 import { router } from 'expo-router';
+import AppHeader from '../../components/header';
 
 const MAX_QUESTION_PREVIEW_LENGTH = 56;
 
@@ -72,7 +73,6 @@ const BookMark = () => {
     const [currentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
-    const handleBack = useCallback(() => navigation.goBack(), [navigation]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -178,8 +178,8 @@ const BookMark = () => {
     const renderLessonCards = useCallback(() => (
         <View style={styles.cardsContainer}>
             {lessonBookmarks.map((item: LessonBookmarkItem) => (
-                <TouchableOpacity onPress={() => handleLessonPress(item)}>
-                    <View key={item.lesson._id} style={styles.lessonCard}>
+                <TouchableOpacity key={item.lesson._id} onPress={() => handleLessonPress(item)}>
+                    <View style={styles.lessonCard}>
                         <View style={styles.lessonHeader}>
                             <View>
                                 <Text style={styles.courseTitle}>
@@ -310,12 +310,7 @@ const BookMark = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>My Bookmarks</Text>
-            </View>
+            <AppHeader screenTitle="My BookMarks" onBackPress={() => router.back()} />
 
             <View style={styles.tabContainer}>
                 <View style={styles.tabBackground}>
@@ -406,32 +401,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F9FAFB',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#111827',
     },
     tabContainer: {
         flexDirection: 'row',

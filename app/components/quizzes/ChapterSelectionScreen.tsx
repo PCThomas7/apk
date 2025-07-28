@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import courseServiceGet from '@/services/courseServiceGet';
 import ResponsiveGridSkeleton from '../skeltons/Skelton';
 import { Ionicons } from '@expo/vector-icons';
-
+import AppHeader from '../header';
 
 type ChapterParams = {
   quizType: string;
@@ -89,17 +89,13 @@ const ChapterSelectionScreen = () => {
       params: { quizType, subject, chapter, examType, },
     });
   };
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
+
 
   if (isLoading && chapters.length === 0) {
     return (
       <View style={[styles.container, { paddingTop: 30 }]}>
-        <View style={styles.header}>
-          <Text style={styles.headerText}>{subject}</Text>
-          <Text style={styles.subHeaderText}>Select a chapter to begin</Text>
-        </View>
+        <AppHeader screenTitle="Select a chapter to begin" onBackPress={() => router.back()} />
+
         <ResponsiveGridSkeleton />
       </View>
     );
@@ -108,12 +104,7 @@ const ChapterSelectionScreen = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{screenTitle}</Text>
-        </View>
+        <AppHeader screenTitle={screenTitle} onBackPress={() => router.back()} />
 
         {error ? (
           <View style={styles.errorContainer}>
@@ -157,28 +148,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center', // Center icon horizontally
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
   },
   headerText: {
     fontSize: 24,

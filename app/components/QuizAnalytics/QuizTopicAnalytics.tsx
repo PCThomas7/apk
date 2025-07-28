@@ -8,6 +8,7 @@ import {
   selectTopicWisePerformance,
   TopicPerformance,
 } from '../../../redux/slices/quizAnalyticsSlice';
+import AppHeader from '../header';
 
 const QuizTopicAnalytics = () => {
   const router = useRouter();
@@ -25,18 +26,10 @@ const QuizTopicAnalytics = () => {
     }
   }, [topicData, subject, chapter]);
 
-  const handleBack = useCallback(() => {
-    router.back();
-  }, [router]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Topic-Wise Analytics</Text>
-      </View>
+      <AppHeader screenTitle="Topic-Wise Analytics" onBackPress={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.contentContainer}>
         {data.length > 0 ? (
@@ -108,27 +101,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
   },
   contentContainer: {
     paddingHorizontal: 16,

@@ -15,6 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import courseServiceGet from '@/services/courseServiceGet';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import ResponsiveGridSkeleton from '../../skeltons/Skelton';
+import AppHeader from '../../header';
 
 const MAX_QUIZZES = 5;
 
@@ -58,9 +59,6 @@ const CreateQuizScreen = () => {
         fetchData();
     }, [fetchData]);
 
-    const handleBack = useCallback(() => {
-        router.back();
-    }, [router]);
 
     const handleExamTypeSelect = useCallback(async (type: string) => {
         if (selectedExamType === type) return;
@@ -96,7 +94,7 @@ const CreateQuizScreen = () => {
             params: {
                 examType: selectedExamType,
                 subjects: JSON.stringify(selectedSubjects),
-                count:count
+                count: count
             },
         });
     }, [selectedExamType, selectedSubjects, router]);
@@ -112,13 +110,7 @@ const CreateQuizScreen = () => {
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-
-            <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Create Quiz</Text>
-            </Animated.View>
+            <AppHeader screenTitle='Create Quiz' onBackPress={() => router.back()} />
 
             <ScrollView
                 contentContainerStyle={styles.content}

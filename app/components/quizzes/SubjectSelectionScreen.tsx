@@ -14,6 +14,7 @@ import courseServiceGet from '../../../services/courseServiceGet';
 import { setSubjects, selectSubjectCacheEntry, selectIsSubjectCacheValid } from '@/redux/slices/subjectSlice';
 import { Ionicons } from '@expo/vector-icons';
 import ResponsiveGridSkeleton from '../skeltons/Skelton';
+import AppHeader from '../../components/header';
 
 const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
@@ -41,6 +42,7 @@ const SubjectSelectionScreen = () => {
     const cachedEntry = useAppSelector((state) =>
         selectSubjectCacheEntry(state, quizType || '', currentRoute)
     );
+
     const isCacheValid = useAppSelector((state) =>
         selectIsSubjectCacheValid(state, quizType || '', CACHE_EXPIRY, currentRoute)
     );
@@ -115,9 +117,6 @@ const SubjectSelectionScreen = () => {
         fetchSubjects();
     }, [fetchSubjects]);
 
-    const handleBack = useCallback(() => {
-        router.back();
-    }, [router]);
 
     const handleSubjectPress = useCallback((subject: Subject, examType: string) => {
         router.push({
@@ -173,12 +172,7 @@ const SubjectSelectionScreen = () => {
     if (loading) {
         return (
             <View style={[styles.container, { paddingTop: 30 }]}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{screenTitle}</Text>
-                </View>
+                <AppHeader screenTitle={screenTitle} onBackPress={() => router.back()} />
                 <ScrollView style={styles.content}>
                     <ResponsiveGridSkeleton />
                 </ScrollView>
@@ -189,12 +183,7 @@ const SubjectSelectionScreen = () => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }} edges={['top', 'bottom', 'left', 'right']}>
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={22} color="#4F46E5" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>{screenTitle}</Text>
-                </View>
+                <AppHeader screenTitle={screenTitle} onBackPress={() => router.back()} />
 
                 <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
                     {error ? (
@@ -243,28 +232,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F3F4F6',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#ffffff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f3f4f6',
-        marginRight: 12,
-        justifyContent: 'center',
-        alignItems: 'center', // Center icon horizontally
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#111827',
     },
     content: {
         flex: 1,
@@ -335,7 +302,7 @@ const styles = StyleSheet.create({
     viewButton: {
         alignItems: 'center', paddingVertical: 10,
         paddingHorizontal: 18,
-        marginTop:7,
+        marginTop: 7,
         backgroundColor: '#4F46E5',
         borderRadius: 8,
     },

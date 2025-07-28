@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import doubtService from '../../../services/doubtService';
+import ResponsiveGridSkeleton from '../skeltons/Skelton';
+import KatexRenderer from '../quizzes/KatexRenderer';
 
 type Reply = {
   _id: string;
@@ -105,10 +107,10 @@ const Doubt = () => {
           prev.map(doubt =>
             doubt._id === replyingTo
               ? {
-                  ...doubt,
-                  replies: [...doubt.replies, result],
-                  status: 'In progress',
-                }
+                ...doubt,
+                replies: [...doubt.replies, result],
+                status: 'In progress',
+              }
               : doubt
           )
         );
@@ -130,58 +132,68 @@ const Doubt = () => {
   };
 
   const renderReply = (reply: Reply, index: number) => (
-    <View key={reply._id || index.toString()} style={styles.replyContainer}>
-      <View style={styles.replyBubble}>
-        <Text style={styles.replyText}>{reply.reply_text}</Text>
-        <Text style={styles.replyMeta}>
-          — {reply.replier_id?.name || 'Unknown'} • {reply.replier_role} • {formatDate(reply.created_at)}
-        </Text>
-      </View>
+  <View key={reply._id || index.toString()} style={styles.replyContainer}>
+    <View style={styles.replyBubble}>
+      <KatexRenderer
+        content={reply.reply_text}
+        style={styles.mathView}
+      />
+      <Text style={styles.replyMeta}>
+        — {reply.replier_id?.name || 'Unknown'} • {reply.replier_role} • {formatDate(reply.created_at)}
+      </Text>
     </View>
-  );
+  </View>
+);
 
-  const renderDoubt = ({ item }: { item: Doubt }) => (
-    <View style={styles.doubtCard}>
-      <View style={styles.doubtHeader}>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusBadgeText}>{item.status.toUpperCase()}</Text>
-        </View>
-        <Text style={styles.doubtDate}>{formatDate(item.created_at)}</Text>
+
+const renderDoubt = ({ item }: { item: Doubt }) => (
+  
+  <View style={styles.doubtCard}>
+    <View style={styles.doubtHeader}>
+      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+        <Text style={styles.statusBadgeText}>{item.status.toUpperCase()}</Text>
       </View>
-
-      <Text style={styles.doubtText}>{item.doubt_text}</Text>
-
-      {!item.is_general && (
-        <View style={styles.tagsContainer}>
-          {[item.exam_type, item.subject, item.chapter, item.topic].map(
-            (tag, i) =>
-              tag && (
-                <View key={i} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                </View>
-              )
-          )}
-        </View>
-      )}
-
-      {item.replies.length > 0 ? (
-        <View style={styles.repliesSection}>
-          <Text style={styles.repliesTitle}>REPLIES ({item.replies.length})</Text>
-          {item.replies.map(renderReply)}
-        </View>
-      ) : (
-        <View style={styles.noRepliesContainer}>
-          <Ionicons name="chatbubble-outline" size={24} color="#9CA3AF" />
-          <Text style={styles.noReplies}>No replies yet</Text>
-        </View>
-      )}
-
-      <TouchableOpacity style={styles.replyButton} onPress={() => handleReplyPress(item._id)}>
-        <Ionicons name="arrow-undo" size={16} color="#4F46E5" />
-        <Text style={styles.replyButtonText}>Reply</Text>
-      </TouchableOpacity>
+      <Text style={styles.doubtDate}>{formatDate(item.created_at)}</Text>
     </View>
-  );
+
+    <KatexRenderer
+      key={item._id}
+      content={item.doubt_text}
+      style={styles.mathView}
+    />
+
+    {!item.is_general && (
+      <View style={styles.tagsContainer}>
+        {[item.exam_type, item.subject, item.chapter, item.topic].map(
+          (tag, i) =>
+            tag && (
+              <View key={i} style={styles.tag}>
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            )
+        )}
+      </View>
+    )}
+
+    {item.replies.length > 0 ? (
+      <View style={styles.repliesSection}>
+        <Text style={styles.repliesTitle}>REPLIES ({item.replies.length})</Text>
+        {item.replies.map(renderReply)}
+      </View>
+    ) : (
+      <View style={styles.noRepliesContainer}>
+        <Ionicons name="chatbubble-outline" size={17} color="#9CA3AF" />
+        <Text style={styles.noReplies}>No replies yet</Text>
+      </View>
+    )}
+
+    <TouchableOpacity style={styles.replyButton} onPress={() => handleReplyPress(item._id)}>
+      <Ionicons name="arrow-undo" size={16} color="#4F46E5" />
+      <Text style={styles.replyButtonText}>Reply</Text>
+    </TouchableOpacity>
+  </View>
+);
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -192,7 +204,7 @@ const Doubt = () => {
 
         <Text style={styles.headerTitle}>My Doubts</Text>
 
-        <TouchableOpacity style={styles.askButtonHeader} onPress={() => {router.push(`/components/doubt/doubtForm`)}}>
+        <TouchableOpacity style={styles.askButtonHeader} onPress={() => { router.push(`/components/doubt/doubtForm`) }}>
           <Ionicons name="add-circle-outline" size={20} color="#4F46E5" />
           <Text style={styles.askButtonHeaderText}>Ask a doubt</Text>
         </TouchableOpacity>
@@ -204,11 +216,7 @@ const Doubt = () => {
         renderItem={renderDoubt}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="help-circle-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>No doubts found</Text>
-            <Text style={styles.emptySubtext}>Ask your first doubt to get started</Text>
-          </View>
+          <ResponsiveGridSkeleton />
         }
         refreshControl={
           <RefreshControl
@@ -335,6 +343,26 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontFamily: 'Inter-Medium',
   },
+  mathView: {
+  width: '100%',
+  alignSelf: 'center',
+  paddingHorizontal: 8,
+  marginVertical: 8,
+  backgroundColor: '#F9FAFB',
+  borderRadius: 8,
+},replyContainer: {
+  marginTop: 12,
+},
+replyBubble: {
+  backgroundColor: '#EEF2FF',
+  padding: 10,
+  borderRadius: 8,
+},
+replyMeta: {
+  fontSize: 12,
+  color: '#6B7280',
+  marginTop: 4,
+},
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -367,39 +395,39 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontFamily: 'Inter-SemiBold',
   },
-  replyContainer: {
-    marginBottom: 12,
-  },
-  replyBubble: {
-    backgroundColor: '#F3F4F6',
-    padding: 12,
-    borderRadius: 8,
-    borderTopLeftRadius: 0,
-  },
+  // replyContainer: {
+  //   marginBottom: 12,
+  // },
+  // replyBubble: {
+  //   backgroundColor: '#F3F4F6',
+  //   padding: 12,
+  //   borderRadius: 8,
+  //   borderTopLeftRadius: 0,
+  // },
   replyText: {
     fontSize: 14,
     lineHeight: 20,
     color: '#374151',
     fontFamily: 'Inter-Regular',
   },
-  replyMeta: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 6,
-    fontFamily: 'Inter-Regular',
-  },
+  // replyMeta: {
+  //   fontSize: 11,
+  //   color: '#9CA3AF',
+  //   marginTop: 6,
+  //   fontFamily: 'Inter-Regular',
+  // },
   noRepliesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: 7,
     backgroundColor: '#F9FAFB',
     borderRadius: 8,
     marginTop: 16,
     gap: 8,
   },
   noReplies: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#9CA3AF',
     fontFamily: 'Inter-Regular',
   },
