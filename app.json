@@ -3,16 +3,17 @@
     "name": "Chaithanya",
     "slug": "Chaithanya",
     "version": "1.0.0",
-    "orientation": "default",  
+    "orientation": "default",
     "icon": "./assets/images/appicon/appicon.png",
     "scheme": "Chaithanya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "requireFullScreen": false, 
+      "requireFullScreen": false,
+      "bundleIdentifier": "com.profpcthomasclasses.Chaithanya",
       "infoPlist": {
-        "UIRequiresFullScreen": false  
+        "UIRequiresFullScreen": false
       }
     },
     "android": {
@@ -20,40 +21,55 @@
         "foregroundImage": "./assets/images/appicon/appicon.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": ".google-services.json",
       "navigationBar": {
         "visible": "sticky-immersive",
         "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "pan",  
-      "windowSoftInputMode": "adjustResize"  
+      "softwareKeyboardLayoutMode": "pan",
+      "windowSoftInputMode": "adjustResize",
+      "package": "com.profpcthomasclasses.Chaithanya"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon/favicon.png"
     },
-   "plugins": [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      "resizeMode": "cover",
-      "backgroundColor": "#ffffff",
-      "image": "./assets/images/splashScreen/splashscreenIcon.png"
-    }
-  ]
-],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "resizeMode": "cover",
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/splashScreen/splashscreenIcon.png"
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true,
-      "tsconfigPaths": true  
+      "tsconfigPaths": true
     },
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "extra": {
       "router": {
         "origin": false
       },
-       "BASEURL": "https://dev.professorpcthomas.com/api"
-    }
+      "BASEURL": "https://dev.professorpcthomas.com/api",
+      "eas": {
+        "projectId": "042a969a-b5d9-4e2d-8836-76cdcd1f9a8d"
+      }
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 3000,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "owner": "professorpcthomas.com"
   }
 }

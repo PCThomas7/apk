@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import authService from '../../../services/authService'
 import * as Device from 'expo-device';
@@ -93,12 +94,12 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
   const handleLogin = async () => {
     if (!validateForm()) return;
 
-    const pushToken = await getPushToken();
 
     setIsLoading(true);
 
     try {
-      const res = await authService.login(formData.email, formData.password ,pushToken);
+      const pushToken = await getPushToken();
+      const res = await authService.login(formData.email, formData.password, pushToken);
       const token = res.data.token;
       const refreshToken = res.data.refreshToken
       const userDetails = res.data.user
@@ -109,7 +110,6 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
       setIsLoading(false);
     }
   };
-
 
   return (
     <View style={loginStyles.container}>

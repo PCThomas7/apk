@@ -137,16 +137,19 @@ export default function RootLayout() {
               color={notification.color}
               lessonId={notification.lessonId}
               courseId={notification.courseId}
+              sectionId={notification.sectionId}
+              chapterId={notification.chapterId}
+              content={notification.content}
               action={notification.action}
-              onJoinLive={(lessonId, courseId) => {
+              onJoinLive={(lessonId, courseId , sectionId ,chapterId ,content = '', title = '') => {
                 setNotification(null);
-                // if (lessonId) {
-                //   router.push(`/lesson/${lessonId}?courseId=${courseId}`);
-                // }
+                if (lessonId && courseId) {
+                 router.push(`/components/courses/courseRoom?video=${encodeURIComponent(content)}&status=${''}&vediotitle=${encodeURIComponent(title)}&bookmarked=${false}&viewCount=${0}&watchTimeSeconds=${0}&totalTimeSeconds=${0}&lessonId=${lessonId}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`)
+                }
               }}
-              onDismiss={() => setNotification(null)}
             />
           )}
+
           <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 }, animation: 'none' }}>
             {isLoggedIn ? (
               <Stack.Screen name="(tabs)" />
