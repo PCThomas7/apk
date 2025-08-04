@@ -446,7 +446,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
         try {
           // Delete the auth token
           await SecureStore.deleteItemAsync('authToken');
-
+          
           // Navigate to AuthScreen using expo-router
           router.replace('/components/auth/AuthScreen');
         } catch (error) {

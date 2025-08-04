@@ -181,7 +181,7 @@ const CourseLesson = () => {
                                 if (scheduled) return; // Prevent navigation if scheduled in future
                                 if (item.type === 'video') {
                                     router.push(
-                                        `/components/courses/courseRoom?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
+                                        `/components/courses/courseRoom?video=${encodeURIComponent(item.content)}&status=${progress?.status ?? ''}&vediotitle=${encodeURIComponent(item.title)}&bookmarked=${progress?.bookmarked ?? false}&viewCount=${progress?.viewCount ?? 0}&watchTimeSeconds=${progress?.watchTimeSeconds ?? 0}&totalTimeSeconds=${progress?.totalTimeSeconds ?? 0}&lessonId=${item._id}&courseId=${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`
                                     );
                                 }
                                 else if (item.type === 'quiz') {

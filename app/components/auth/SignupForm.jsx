@@ -378,16 +378,10 @@ export default function SignupForm({ onSwitchToLogin }) {
 
 const handleSignup = async () => {
   if (!validateForm()) return;
-  setIsLoading(true);
-
-  await authService.register(formData.email, formData.name, formData.password, )
+  setIsLoading(true);  
 
   try {
-    const res = await axios.post("http://192.168.10.42:5000/api/auth/register", {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-    });
+    const res = await authService.register(formData.email, formData.name, formData.password)
 
     if (res.status === 200) {
       onSwitchToLogin();

@@ -85,6 +85,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ params }) => {
     [params.watchTimeSeconds]
   );
 
+
   // Memoized functions
   const seekToTimeJS = useCallback((seconds: number) => `
     (function() {

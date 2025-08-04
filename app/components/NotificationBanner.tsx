@@ -1,5 +1,117 @@
-import React from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+// import React from 'react';
+// import { Button, StyleSheet, Text, View } from 'react-native';
+
+// interface NotificationBannerProps {
+//   title: string;
+//   body: string;
+//   color?: string;
+//   lessonId?: string;
+//   courseId?: string;
+//   sectionId?: string;
+//   chapterId?: string;
+//   content?: string;
+//   action?: 'join' | 'dismiss';
+//   onJoinLive?: (
+//     lessonId?: string,
+//     courseId?: string,
+//     sectionId?: string,
+//     chapterId?: string,
+//     content?: string,
+//     title?: string
+//   ) => void;
+//   onDismiss?: () => void;
+// }
+
+
+// const NotificationBanner: React.FC<NotificationBannerProps> = ({ 
+//   title, 
+//   body, 
+//   color = '#cccccc', 
+//   lessonId, 
+//   courseId,
+//   sectionId,
+//   chapterId,
+//   content,
+//   action, 
+//   onJoinLive, 
+//   onDismiss 
+// }) => {
+//   return (
+//     <View style={[styles.container, { backgroundColor: color }]}> 
+//       <Text style={styles.title}>{title}</Text>
+//       <Text style={styles.body}>{body}</Text>
+
+//       <View style={styles.buttonContainer}>
+//         {action === 'join' && onJoinLive && (
+//           <Button 
+//             title="Join Live" 
+//             onPress={() => onJoinLive(lessonId, courseId , sectionId ,chapterId , content ,title)} 
+//           />
+//         )}
+//         {action === 'dismiss' && onDismiss && (
+//           <Button 
+//             title="Dismiss" 
+//             onPress={onDismiss} 
+//             color="#ff4444"
+//           />
+//         )}
+//       </View>
+//     </View>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     padding: 16,
+//     borderRadius: 8,
+//     margin: 8,
+//     elevation: 3,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.2,
+//     shadowRadius: 4,
+//   },
+//   title: {
+//     fontWeight: 'bold',
+//     fontSize: 16,
+//     marginBottom: 4,
+//     color: '#fff',
+//   },
+//   body: {
+//     fontSize: 14,
+//     color: '#fff',
+//     marginBottom: 8,
+//   },
+//   info: {
+//     fontSize: 12,
+//     color: '#fff',
+//     marginTop: 2,
+//     opacity: 0.8,
+//   },
+//   buttonContainer: {
+//     marginTop: 12,
+//     flexDirection: 'row',
+//     justifyContent: 'flex-end',
+//     gap: 8,
+//   },
+// });
+
+// export default NotificationBanner;
+
+import React, { useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  Animated,
+  Dimensions,
+  Platform,
+  TouchableOpacity,
+  Easing,
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 interface NotificationBannerProps {
   title: string;
@@ -22,78 +134,142 @@ interface NotificationBannerProps {
   onDismiss?: () => void;
 }
 
-
-const NotificationBanner: React.FC<NotificationBannerProps> = ({ 
-  title, 
-  body, 
-  color = '#cccccc', 
-  lessonId, 
+const NotificationBanner: React.FC<NotificationBannerProps> = ({
+  title,
+  body,
+  color = '#000000ff',
+  lessonId,
   courseId,
   sectionId,
   chapterId,
   content,
-  action, 
-  onJoinLive, 
-  onDismiss 
+  action = 'join',
+  onJoinLive,
+  onDismiss,
 }) => {
-  return (
-    <View style={[styles.container, { backgroundColor: color }]}> 
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.body}>{body}</Text>
+  const translateY = useRef(new Animated.Value(-150)).current;
 
-      <View style={styles.buttonContainer}>
-        {action === 'join' && onJoinLive && (
-          <Button 
-            title="Join Live" 
-            onPress={() => onJoinLive(lessonId, courseId , sectionId ,chapterId , content ,title)} 
-          />
-        )}
+  const slideIn = () => {
+    Animated.timing(translateY, {
+      toValue: Platform.OS === 'ios' ? 50 : 30,
+      duration: 350,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const slideOutAndDismiss = () => {
+    Animated.timing(translateY, {
+      toValue: -200,
+      duration: 350,
+      easing: Easing.in(Easing.exp),
+      useNativeDriver: true,
+    }).start(() => {
+      onDismiss?.();
+    });
+  };
+
+  useEffect(() => {
+    slideIn();
+
+    // Auto-dismiss after 5s
+    const timer = setTimeout(() => {
+      slideOutAndDismiss();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <Animated.View
+      style={[styles.container, { transform: [{ translateY }], backgroundColor: color }]}
+    >
+      <View style={styles.topRow}>
+        <MaterialCommunityIcons
+          name="television-play"
+          size={28}
+          color="white"
+          style={styles.icon}
+        />
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.body}>{body}</Text>
+        </View>
         {action === 'dismiss' && onDismiss && (
-          <Button 
-            title="Dismiss" 
-            onPress={onDismiss} 
-            color="#ff4444"
-          />
+          <TouchableOpacity onPress={slideOutAndDismiss} style={styles.closeIcon}>
+            <Ionicons name="close" size={20} color="#ffffff" />
+          </TouchableOpacity>
         )}
       </View>
-    </View>
+
+      {action === 'join' && onJoinLive && (
+        <TouchableOpacity
+          style={styles.joinButton}
+          onPress={() => {
+            onJoinLive(lessonId, courseId, sectionId, chapterId, content, title);
+            slideOutAndDismiss();
+          }}
+        >
+          <Text style={styles.joinButtonText}>JOIN NOW →</Text>
+        </TouchableOpacity>
+      )}
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 8,
-    margin: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    position: 'absolute',
+    top: 0,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    width: '100%',
+    zIndex: 9999,
+    elevation: 10,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  icon: {
+    marginRight: 12,
+    marginTop: 4,
+  },
+  textContainer: {
+    flex: 1,
   },
   title: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 4,
     color: '#fff',
+    marginBottom: 4,
   },
   body: {
     fontSize: 14,
-    color: '#fff',
-    marginBottom: 8,
+    color: '#ccc',
   },
-  info: {
-    fontSize: 12,
-    color: '#fff',
-    marginTop: 2,
-    opacity: 0.8,
+  closeIcon: {
+    padding: 4,
+    marginLeft: 8,
   },
-  buttonContainer: {
-    marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 8,
+  joinButton: {
+    marginTop: 16,
+    borderWidth: 1,
+    marginLeft: 40,
+    borderColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+  },
+  joinButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
 
 export default NotificationBanner;
+
+
+

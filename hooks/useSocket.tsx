@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 
-const SOCKET_SERVER_URL = 'https://dev.professorpcthomas.com';
+const SOCKET_SERVER_URL = 'https://backend.professorpcthomas.com';
 
 const socketOptions = {
   transports: ['websocket'],

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/appicon/appicon.png",
-    "scheme": "Chaithanya",
+    "scheme": "chaithanya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -21,10 +21,14 @@
         "foregroundImage": "./assets/images/appicon/appicon.png",
         "backgroundColor": "#ffffff"
       },
-      "googleServicesFile": ".google-services.json",
+      "googleServicesFile": "./google-services.json",
       "navigationBar": {
         "visible": "sticky-immersive",
         "backgroundColor": "#FFFFFF"
+      },
+      "notification": {
+        "icon": "./assets/images/favicon/favicon.png",
+        "color": "#E91E63"
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
@@ -41,7 +45,7 @@
       [
         "expo-splash-screen",
         {
-          "resizeMode": "cover",
+          "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "image": "./assets/images/splashScreen/splashscreenIcon.png"
         }
@@ -60,7 +64,7 @@
       "router": {
         "origin": false
       },
-      "BASEURL": "https://dev.professorpcthomas.com/api",
+      "BASEURL": "https://backend.professorpcthomas.com/api",
       "eas": {
         "projectId": "042a969a-b5d9-4e2d-8836-76cdcd1f9a8d"
       }
@@ -68,8 +72,12 @@
     "updates": {
       "enabled": true,
       "fallbackToCacheTimeout": 3000,
-      "checkAutomatically": "ON_LOAD"
+      "checkAutomatically": "ON_LOAD",
+      "url": "https://u.expo.dev/042a969a-b5d9-4e2d-8836-76cdcd1f9a8d"
     },
-    "owner": "professorpcthomas.com"
+    "owner": "professorpcthomas.com",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

@@ -141,12 +141,18 @@ export default function RootLayout() {
               chapterId={notification.chapterId}
               content={notification.content}
               action={notification.action}
-              onJoinLive={(lessonId, courseId , sectionId ,chapterId ,content = '', title = '') => {
+              onJoinLive={(lessonId, courseId, sectionId, chapterId, content = '', title = '') => {
                 setNotification(null);
                 if (lessonId && courseId) {
-                 router.push(`/components/courses/courseRoom?video=${encodeURIComponent(content)}&status=${''}&vediotitle=${encodeURIComponent(title)}&bookmarked=${false}&viewCount=${0}&watchTimeSeconds=${0}&totalTimeSeconds=${0}&lessonId=${lessonId}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`)
+                  router.push(`/components/courses/courseRoom?video=${encodeURIComponent(content)}&status=${''}&vediotitle=${encodeURIComponent(title)}&bookmarked=${false}&viewCount=${0}&watchTimeSeconds=${0}&totalTimeSeconds=${0}&lessonId=${lessonId}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`)
                 }
               }}
+              onDismiss={() => {
+                requestAnimationFrame(() => {
+                  setTimeout(() => setNotification(null), 0);
+                });
+              }}
+
             />
           )}
 

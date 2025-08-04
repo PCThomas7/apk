@@ -12,6 +12,7 @@ import {
 import authService from '../../../services/authService'
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import AuthOptions from '../googleButton';
 
 export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
   const [formData, setFormData] = useState({
@@ -111,6 +112,10 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
     }
   };
 
+  const handleGoogleSignIn = () => {
+    console.log("button clicked")
+  }
+
   return (
     <View style={loginStyles.container}>
       {/* Email Input */}
@@ -168,6 +173,11 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
           <Text style={loginStyles.loginButtonText}>Sign In</Text>
         )}
       </TouchableOpacity>
+
+       <AuthOptions
+        isLoading={isLoading}
+        handleGoogleSignIn={handleGoogleSignIn}
+      />
 
       {/* Switch to Signup */}
       <View style={loginStyles.switchContainer}>
@@ -251,7 +261,7 @@ const loginStyles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

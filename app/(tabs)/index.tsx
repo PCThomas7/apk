@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator , RefreshControl } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Linking } from 'react-native';
 import { StudentWelcomeBanner } from '../components/home/welcomeCard';
 import UpcomingLessons from '../components/home/LessonComponent';
 import PerformanceComponent from '../components/home/PerformanceComponent';
 import courseServiceGet from ".././../services/courseServiceGet"
 import { useRouter } from 'expo-router';
+import updateService from '../../services/updateService'
+import UpdateBanner from '../components/updateBanner';
+
 
 // Define lesson type
 interface Lesson {
@@ -27,11 +30,13 @@ const HomeScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [updateInfo, setUpdateInfo] = useState<null | { updateUrl: string }>(null);
 
   const fetchUpcomingLessons = useCallback(async () => {
     try {
       setIsLoading(true);
-       setRefreshing(true);
+      setRefreshing(true);
       const lessons = await courseServiceGet.getEnrolledVideoLessons();
       setUpcomingLessons(lessons);
       setError(null);
@@ -41,21 +46,33 @@ const HomeScreen = () => {
       setUpcomingLessons([]);
     } finally {
       setIsLoading(false);
-       setRefreshing(false);
+      setRefreshing(false);
     }
   }, []);
 
-const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(() => {
     fetchUpcomingLessons();
   }, [fetchUpcomingLessons]);
 
+  const checkUpdate = async () => {
+    try {
+      const response = await updateService.update(version);
+      if (response.updateAvailable === true) {
+        setUpdateInfo({ updateUrl: response.updateUrl });
+      }
+    } catch (error) {
+      console.error('Update check failed:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUpcomingLessons();
+    checkUpdate()
   }, [fetchUpcomingLessons]);
 
   return (
     <ScrollView style={styles.container}
-    refreshControl={
+      refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
@@ -63,6 +80,13 @@ const onRefresh = useCallback(() => {
           tintColor="#4F46E5"
         />
       }>
+      {updateInfo && (
+        <UpdateBanner
+          updateUrl={updateInfo.updateUrl}
+          onClose={() => setUpdateInfo(null)}
+          duration={10000} // optional auto-dismiss
+        />
+      )}
       <StudentWelcomeBanner />
       <View style={[styles.section, { minHeight: 350 }]}>
         {upcomingLessons === null ? (
@@ -78,7 +102,7 @@ const onRefresh = useCallback(() => {
         router.push(`/components/analytics/AnalyticsList`);
       }} />
     </ScrollView>
-    
+
   );
 };
 
