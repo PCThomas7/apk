@@ -28,5 +28,14 @@ const authService = {
             throw error;
         }
     },
+
+    googleLogin: async (userInfo) => {
+        try {
+            const response = await api.post(`/auth/google`, {userInfo});
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    },
 }
 export default authService;

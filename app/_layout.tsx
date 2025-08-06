@@ -1,174 +1,150 @@
-// import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-// import { useFonts } from 'expo-font';
-// import { Stack, useRouter } from 'expo-router';
-// import { StatusBar } from 'expo-status-bar';
-// import { useEffect, useState } from 'react';
-// import * as SecureStore from 'expo-secure-store';
-// import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-// import { useColorScheme } from '@/hooks/useColorScheme';
-
-
-// export default function RootLayout() {
-//   const colorScheme = useColorScheme();
-//   const router = useRouter();
-
-//   const [isAuthChecked, setIsAuthChecked] = useState(false);
-//   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-//   const [loaded] = useFonts({
-//     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-//   });
-
-//   useEffect(() => {
-//     const checkAuth = async () => {
-//       const token = await SecureStore.getItemAsync('authToken');
-//       setIsLoggedIn(!!token); 
-//       setIsAuthChecked(true);
-//     };
-//     checkAuth();
-//   }, []);
-
-//   if (!loaded || !isAuthChecked) {
-//     return null; // or a splash loader
-//   }
-
-//   return (
-//     <SafeAreaProvider>
-//       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-//         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-//         <Stack screenOptions={{ 
-//           headerShown: false,
-//           contentStyle: { flex: 1 } // Ensure content takes full space
-//         }}>
-//           {isLoggedIn ? (
-//             <Stack.Screen 
-//               name="(tabs)" 
-//               options={{ 
-//                 headerShown: false,
-//                 contentStyle: { paddingBottom: 0 } // Adjust as needed
-//               }} 
-//             />
-//           ) : (
-//             <Stack.Screen name="Auth" options={{ headerShown: false }} />
-//           )}
-//           <Stack.Screen name="+not-found" />
-//         </Stack>
-//       </ThemeProvider>
-//     </SafeAreaProvider>
-//   );
-// }
-
-
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import * as SplashScreen from 'expo-splash-screen';
 import { Provider } from 'react-redux';
 import { store } from '../redux/store';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { login, logout, setLoading } from '../redux/slices/authSlice';
+import LoadingScreen from './components/LoadingScreen';
 import NotificationBanner from '../app/components/NotificationBanner';
 import { useNotificationHandler } from '../hooks/useNotificationHandler';
 
-SplashScreen.preventAutoHideAsync(); // ✅ Prevent splash from auto-hiding
-
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const router = useRouter();
-
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [appIsReady, setAppIsReady] = useState(false);
-  const { notification, setNotification } = useNotificationHandler()
-
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      // const token = await SecureStore.getItemAsync('authToken');
-      // setIsLoggedIn(!!token); 
-      const token = await SecureStore.getItemAsync('authToken');
-      const loggedIn = !!token;
-      setIsLoggedIn(loggedIn);
-
-      setIsAuthChecked(true);
-    };
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    const prepare = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // simulate load
-      setAppIsReady(true);
-      await SplashScreen.hideAsync(); // ✅ Only hide after ready
-    };
-    prepare();
-  }, []);
-
-  if (!loaded || !isAuthChecked || !appIsReady) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.overlay} />
-
-        <Image
-          source={require('../assets/images/splashScreen/splashscreenIcon.png')}
-          style={styles.splashImage}
-          resizeMode="contain"
-        />
-      </View>
-    );
-  }
-
   return (
-    <Provider store={store}> {/* ✅ Redux Provider */}
-      <SafeAreaProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          {notification && (
-            <NotificationBanner
-              title={notification.title}
-              body={notification.body}
-              color={notification.color}
-              lessonId={notification.lessonId}
-              courseId={notification.courseId}
-              sectionId={notification.sectionId}
-              chapterId={notification.chapterId}
-              content={notification.content}
-              action={notification.action}
-              onJoinLive={(lessonId, courseId, sectionId, chapterId, content = '', title = '') => {
-                setNotification(null);
-                if (lessonId && courseId) {
-                  router.push(`/components/courses/courseRoom?video=${encodeURIComponent(content)}&status=${''}&vediotitle=${encodeURIComponent(title)}&bookmarked=${false}&viewCount=${0}&watchTimeSeconds=${0}&totalTimeSeconds=${0}&lessonId=${lessonId}&courseId${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`)
-                }
-              }}
-              onDismiss={() => {
-                requestAnimationFrame(() => {
-                  setTimeout(() => setNotification(null), 0);
-                });
-              }}
-
-            />
-          )}
-
-          <Stack screenOptions={{ headerShown: false, contentStyle: { flex: 1 }, animation: 'none' }}>
-            {isLoggedIn ? (
-              <Stack.Screen name="(tabs)" />
-            ) : (
-              <Stack.Screen name="Auth" />
-            )}
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
-      </SafeAreaProvider>
+    <Provider store={store}>
+      <DelayedContent />
     </Provider>
   );
 }
+
+function DelayedContent() {
+  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const segments = useSegments() as string[];
+
+  const dispatch = useAppDispatch();
+  const { isLoggedIn, isLoading } = useAppSelector((state) => state.auth);
+  const { notification, setNotification } = useNotificationHandler();
+
+  const [fontsLoaded] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  });
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      dispatch(setLoading(true));
+      try {
+        const token = await SecureStore.getItemAsync('authToken');
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+
+        if (token) {
+          dispatch(login({ token, refreshToken: refreshToken || '' }));
+        } else {
+          dispatch(logout());
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        dispatch(logout());
+      } finally {
+        dispatch(setLoading(false));
+      }
+    };
+    checkAuth();
+  }, [dispatch]);
+
+  // Handle navigation based on authentication state
+  useEffect(() => {
+    if (isLoading) return; // Don't navigate while loading
+
+    const inAuthGroup = segments[0] === 'Auth';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    if (isLoggedIn) {
+      // User is logged in
+      if (inAuthGroup) {
+        // Redirect from Auth to tabs
+        router.replace('/(tabs)');
+      }
+    } else {
+      // User is not logged in
+      if (inTabsGroup || segments.length === 0) {
+        // Redirect to Auth if trying to access tabs or root
+        router.replace('/Auth');
+      }
+    }
+  }, [isLoggedIn, segments, isLoading]);
+
+  if (!fontsLoaded || isLoading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        {notification && (
+          <NotificationBanner
+            title={notification.title}
+            body={notification.body}
+            color={notification.color}
+            lessonId={notification.lessonId}
+            courseId={notification.courseId}
+            sectionId={notification.sectionId}
+            chapterId={notification.chapterId}
+            content={notification.content}
+            action={notification.action}
+            onJoinLive={(lessonId, courseId, sectionId, chapterId, content = '', title = '') => {
+              setNotification(null);
+              if (lessonId && courseId) {
+                router.push(`/components/courses/courseRoom?video=${encodeURIComponent(content)}&status=${''}&vediotitle=${encodeURIComponent(title)}&bookmarked=${false}&viewCount=${0}&watchTimeSeconds=${0}&totalTimeSeconds=${0}&lessonId=${lessonId}&courseId=${courseId}&sectionId=${sectionId}&chapterId=${chapterId}`)
+              }
+            }}
+            onDismiss={() => {
+              requestAnimationFrame(() => {
+                setTimeout(() => setNotification(null), 0);
+              });
+            }}
+          />
+        )}
+
+        <Stack screenOptions={{
+          headerShown: false,
+          contentStyle: { flex: 1 },
+          animation: 'none'
+        }}>
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              // Remove the redirect prop - we handle this in useEffect
+            }}
+            listeners={({ navigation }) => ({
+              beforeRemove: (e) => {
+                if (e.data.action.type === 'GO_BACK') {
+                  e.preventDefault();
+                }
+              }
+            })}
+          />
+          <Stack.Screen
+            name="Auth"
+            options={{
+              // Remove the redirect prop - we handle this in useEffect
+            }}
+          />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
 const window = Dimensions.get('window');
 
 const styles = StyleSheet.create({
@@ -176,15 +152,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // Dark background for better contrast
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff', // Semi-transparent dark overlay
-  },
-  splashImage: {
-    width: window.width * 0.9, // 90% of screen width
-    height: window.height * 0.9, // 90% of screen height
-    transform: [{ scale: 2 }], // Slightly scale up the image
-  },
+    backgroundColor: '#000',
+  }
 });

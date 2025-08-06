@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import authService from '../../../services/authService'
+import authService from '../../../services/authService';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import AuthOptions from '../googleButton';
+import AuthOptions from '../GoogleAuth';
 
 export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
   const [formData, setFormData] = useState({
@@ -25,16 +25,14 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     }
@@ -59,7 +57,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
 
   const getPushToken = async () => {
     if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
+      await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
@@ -71,54 +69,67 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
     if (Device.isDevice) {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
+
       if (existingStatus !== 'granted') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
+
       if (finalStatus !== 'granted') {
-        handleRegistrationError('Permission not granted to get push token for push notification!');
-        return;
+        console.log('Permission not granted to get push token');
+        return null;
       }
+
       try {
-        // Get FCM device push token
-        const { data: fcmToken } = await Notifications.getDevicePushTokenAsync();
-        console.log('FCM Token:', fcmToken);
-        return fcmToken;
+        const { data: token } = await Notifications.getDevicePushTokenAsync();
+        return token;
       } catch (e) {
-        handleRegistrationError(`${e}`);
+        console.log('Error getting push token:', e);
+        return null;
       }
     } else {
-      handleRegistrationError('Must use physical device for push notifications');
+      console.log('Must use physical device for push notifications');
+      return null;
     }
   };
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-
-
     setIsLoading(true);
 
     try {
       const pushToken = await getPushToken();
       const res = await authService.login(formData.email, formData.password, pushToken);
-      const token = res.data.token;
-      const refreshToken = res.data.refreshToken
-      const userDetails = res.data.user
-      onLoginSuccess(token, refreshToken, userDetails)
+      const { token, refreshToken, user } = res.data;
+      onLoginSuccess(token, refreshToken, user);
     } catch (err) {
-      console.error("Login failed:", err.response?.data || err);
+      console.log("Login failed:", err.response?.data || err);
+      Alert.alert('Error', 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = () => {
-    console.log("button clicked")
-  }
+  const handleGoogleSignIn = async (googleData) => {
+    try {
+      const pushToken = await getPushToken();
+      const userInfo = {
+        name: googleData.name,
+        email: googleData.email,
+        sub: googleData.sub,
+        pushToken: pushToken || 'fallback-token'
+      };
+      const res = await authService.googleLogin(userInfo);
+      const { token, refreshToken, user } = res.data;
+      onLoginSuccess(token, refreshToken, user);
+    } catch (err) {
+      console.log("Google login failed:", err.response?.data || err);
+      Alert.alert('Error', 'Google login failed');
+    }
+  };
 
   return (
     <View style={loginStyles.container}>
-      {/* Email Input */}
       <View style={loginStyles.inputContainer}>
         <Text style={loginStyles.label}>Email</Text>
         <TextInput
@@ -129,12 +140,10 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
           onChangeText={(value) => handleInputChange('email', value)}
           keyboardType="email-address"
           autoCapitalize="none"
-          autoCorrect={false}
         />
         {errors.email && <Text style={loginStyles.errorText}>{errors.email}</Text>}
       </View>
 
-      {/* Password Input */}
       <View style={loginStyles.inputContainer}>
         <Text style={loginStyles.label}>Password</Text>
         <View style={loginStyles.passwordContainer}>
@@ -156,12 +165,10 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
         {errors.password && <Text style={loginStyles.errorText}>{errors.password}</Text>}
       </View>
 
-      {/* Forgot Password */}
       <TouchableOpacity style={loginStyles.forgotPassword}>
         <Text style={loginStyles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      {/* Login Button */}
       <TouchableOpacity
         style={[loginStyles.loginButton, isLoading && loginStyles.buttonDisabled]}
         onPress={handleLogin}
@@ -174,12 +181,18 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
         )}
       </TouchableOpacity>
 
-       <AuthOptions
+      <View style={loginStyles.continuecontainer}>
+        <View style={loginStyles.continueline} />
+        <View style={loginStyles.continuetextContainer}>
+          <Text style={loginStyles.continuetext}>Or continue with</Text>
+        </View>
+      </View>
+
+      <AuthOptions
         isLoading={isLoading}
         handleGoogleSignIn={handleGoogleSignIn}
       />
 
-      {/* Switch to Signup */}
       <View style={loginStyles.switchContainer}>
         <Text style={loginStyles.switchText}>Don't have an account? </Text>
         <TouchableOpacity onPress={onSwitchToSignup}>
@@ -292,8 +305,26 @@ const loginStyles = StyleSheet.create({
     color: '#3B82F6',
     fontWeight: '600',
   },
+  continuecontainer: {
+    position: 'relative',
+    height: 20,
+    justifyContent: 'center',
+  },
+  continueline: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#D1D5DB', // Tailwind border-gray-300
+  },
+  continuetextContainer: {
+    alignSelf: 'center',
+    backgroundColor: '#F3F4F6', // Tailwind bg-gray-100
+    paddingHorizontal: 8,
+  },
+  continuetext: {
+    fontSize: 12,
+    color: '#6B7280', // Tailwind text-gray-500
+  },
 });
-
-
-
-

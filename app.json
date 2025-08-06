@@ -4,7 +4,7 @@
     "slug": "Chaithanya",
     "version": "1.0.0",
     "orientation": "default",
-    "icon": "./assets/images/appicon/appicon.png",
+    "icon": "./assets/images/appicon/AppIconGrid.png",
     "scheme": "chaithanya",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -18,8 +18,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/appicon/appicon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/appicon/adaptive-icon.png",
+        "backgroundColor": "#DF1656"
       },
       "googleServicesFile": "./google-services.json",
       "navigationBar": {
@@ -27,7 +27,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "notification": {
-        "icon": "./assets/images/favicon/favicon.png",
+        "icon": "./assets/images/favicon/notification.png",
         "color": "#E91E63"
       },
       "edgeToEdgeEnabled": true,
@@ -42,12 +42,13 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-google-signin/google-signin",
       [
         "expo-splash-screen",
         {
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
-          "image": "./assets/images/splashScreen/splashscreenIcon.png"
+          "image": "./assets/images/splashScreen/splash-icon-dark-1.png"
         }
       ]
     ],

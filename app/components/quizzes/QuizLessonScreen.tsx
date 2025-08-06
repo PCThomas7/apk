@@ -19,6 +19,7 @@ type Lesson = {
   isLocked: boolean;
   isScheduled: boolean;
   scheduledFor?: string;
+  type?:string;
 };
 
 const QuizLessonScreen = () => {
@@ -27,6 +28,7 @@ const QuizLessonScreen = () => {
   const router = useRouter();
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  console.log("lesson : ",lesson)
   const [loading, setLoading] = useState(true);
   const activeCourse = useSelector((state: RootState) => state.activeCourse.current);
 
@@ -110,7 +112,8 @@ const markLessonasComplete = async (contentIdStr: string) => {
             <View style={styles.iconContainer}>
               <Ionicons name="time-outline" size={48} color="#3B82F6" />
             </View>
-            <Text style={styles.cardTitle}>Quiz Coming Soon</Text>
+            
+            <Text style={styles.cardTitle}>{lesson?.type === 'video' ? 'lesson Coming Soon' : 'Quiz Coming Soon'}</Text>
             <Text style={styles.cardDescription}>
               {lesson.scheduledFor
                 ? `Available on ${new Date(lesson.scheduledFor).toLocaleString('en-IN', {
