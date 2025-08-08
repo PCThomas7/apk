@@ -15,7 +15,6 @@ const QuizSolutionScreen = React.memo(() => {
   const dispatch = useDispatch();
   const { index, answers } = useLocalSearchParams<{ index?: string; answers?: string }>();
   const quiz = useSelector((state: RootState) => state.quiz.currentQuiz);
-  // console.log("Quiz : ",quiz)
   const solutionSelectedQuestionId = useSelector((state: RootState) => state.solution.selectedQuestionId);
   const [currentQuestionBookmarkStatus, setcurrentQuestionBookmarkStatus] = useState(false);
 
@@ -48,28 +47,37 @@ const QuizSolutionScreen = React.memo(() => {
   const [currentIndex, setCurrentIndex] = React.useState(initialIndex);
   const currentQuestion = allQuestions[currentIndex];
 
+  // Memoized current question data
+  const { userAnswer, correctOptions } = useMemo(() => {
+    const userAnswerArr = parsedAnswers[currentQuestion?.id] || [];
+    return {
+      userAnswer: Array.isArray(userAnswerArr) ? userAnswerArr : [userAnswerArr],
+      correctOptions: currentQuestion?.options?.filter((opt) => opt.isCorrect) || []
+    };
+  }, [parsedAnswers, currentQuestion]);
+
   useEffect(() => {
     const checkBookmarkStatus = async () => {
-      const response = await courseServiceGet.checkBookmarkStatus(currentQuestion.id);
-      setcurrentQuestionBookmarkStatus(response);
+      if (currentQuestion?.id) {
+        const response = await courseServiceGet.checkBookmarkStatus(currentQuestion.id);
+        setcurrentQuestionBookmarkStatus(response);
+      }
     };
-
-    if (currentQuestion?.id) {
-      checkBookmarkStatus();
-    }
+    checkBookmarkStatus();
   }, [currentQuestion?.id]);
 
   const toggleQuestionBookmark = async () => {
     try {
-      if (!currentQuestionBookmarkStatus) {
+      const newStatus = !currentQuestionBookmarkStatus;
+      setcurrentQuestionBookmarkStatus(newStatus); // Optimistic update
+      if (newStatus) {
         await courseServiceGet.bookmarkQuestion(currentQuestion.id);
-        setcurrentQuestionBookmarkStatus(true); // Optimistic update
       } else {
         await courseServiceGet.removeBookmark(currentQuestion.id);
-        setcurrentQuestionBookmarkStatus(false); // Optimistic update
       }
     } catch (error) {
       console.error('Bookmark toggle error:', error);
+      setcurrentQuestionBookmarkStatus(!currentQuestionBookmarkStatus); // Revert on error
     }
   };
 
@@ -84,96 +92,49 @@ const QuizSolutionScreen = React.memo(() => {
     }
   }, [solutionSelectedQuestionId, allQuestions, currentIndex, dispatch]);
 
-  // Memoized current question data
-  const { userAnswer, correctOption } = useMemo(() => {
-    const userAnswerArr = parsedAnswers[currentQuestion?.id] || [];
-    return {
-      userAnswer: userAnswerArr[0],
-      correctOption: currentQuestion?.options?.find((opt) => opt.isCorrect)
-    };
-  }, [parsedAnswers, currentQuestion]);
+  // Navigation handlers
+  const handlePrev = useCallback(() => setCurrentIndex(prev => Math.max(prev - 1, 0)), []);
 
-  // Memoized navigation handlers
-  const handlePrev = useCallback(() =>
-    setCurrentIndex(prev => Math.max(prev - 1, 0)), []);
   const handleNext = useCallback(() =>
-    setCurrentIndex(prev => Math.min(prev + 1, allQuestions.length - 1)), [allQuestions.length]);
+    setCurrentIndex(prev => Math.min(prev + 1, allQuestions.length - 1)),
+    [allQuestions.length]
+  );
 
   const handleQuestionList = useCallback(() =>
     router.push({
       pathname: '/components/quizzes/ReportPalette',
       params: { answers: JSON.stringify(parsedAnswers) },
-    }), [router, parsedAnswers]);
+    }),
+    [router, parsedAnswers]
+  );
 
-  // Memoized option label generator
-  const getOptionLabel = useCallback((index: number) =>
-    String.fromCharCode(65 + index), []);
-
-  // Memoized option style calculator
-  const getOptionStyle = useCallback((option: any) => {
-    if (!userAnswer) {
-      return option.isCorrect
-        ? [styles.optionUnattempted, styles.optionUnattemptedCorrect]
-        : styles.optionUnattempted;
-    }
-
-    if (currentQuestion.type === 'Numeric') {
-      // For numeric questions, compare the text values directly
-      const isCorrect = userAnswer === option.text;
-      return isCorrect ? styles.optionCorrect : styles.optionDefault;
-    } else if (currentQuestion.type === 'MMCQ') {
-      // For MMCQ, check if this option was selected and whether it's correct
-      const wasSelected = Array.isArray(userAnswer) && userAnswer.includes(option.id);
-      if (wasSelected) {
-        return option.isCorrect ? styles.optionCorrect : styles.optionWrong;
-      }
-      return option.isCorrect ? styles.optionCorrect : styles.optionDefault;
-    } else {
-      // Default MCQ handling
-      if (userAnswer === option.id) {
-        return option.isCorrect ? styles.optionCorrect : styles.optionWrong;
-      }
-      return option.isCorrect ? styles.optionCorrect : styles.optionDefault;
-    }
-  }, [userAnswer, currentQuestion?.type]);
-
-  const shouldShowAsCorrect = useCallback((option: any) => {
-    if (currentQuestion.type === 'Numeric') {
-      return userAnswer === option.text;
-    } else if (currentQuestion.type === 'MMCQ') {
-      return Array.isArray(userAnswer)
-        ? userAnswer.includes(option.id) && option.isCorrect
-        : false;
-    } else {
-      return userAnswer === option.id && option.isCorrect;
-    }
-  }, [userAnswer, currentQuestion?.type]);
-
-  // Function to determine if an option should show as wrong for the current user answer
-  const shouldShowAsWrong = useCallback((option: any) => {
-    if (currentQuestion.type === 'Numeric') {
-      return false; // Numeric only shows correct or default
-    } else if (currentQuestion.type === 'MMCQ') {
-      return Array.isArray(userAnswer)
-        ? userAnswer.includes(option.id) && !option.isCorrect
-        : false;
-    } else {
-      return userAnswer === option.id && !option.isCorrect;
-    }
-  }, [userAnswer, currentQuestion?.type]);
+  // Helper functions
+  const getOptionLabel = useCallback((index: number) => String.fromCharCode(65 + index), []);
 
   const isFirstQuestion = currentIndex === 0;
   const isLastQuestion = currentIndex === allQuestions.length - 1;
+
+  // Calculate MMCQ stats
+  const mmcqStats = useMemo(() => {
+    if (currentQuestion?.type !== 'MMCQ' || !userAnswer) return null;
+
+    const correctCount = userAnswer.filter(id =>
+      currentQuestion.options.some(opt => opt.id === id && opt.isCorrect)
+    ).length;
+
+    return {
+      selected: userAnswer.length,
+      correct: correctCount,
+      incorrect: userAnswer.length - correctCount
+    };
+  }, [currentQuestion, userAnswer]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
       <AppHeader screenTitle="Quiz Solutions" onBackPress={() => router.back()} />
 
-
       <View style={styles.contentContainer}>
-
         <View style={styles.questionHeader}>
-
           <Text style={styles.sectionTitle}>
             {currentQuestion?.sectionName || ''} (Q{currentIndex + 1}/{allQuestions.length})
           </Text>
@@ -184,13 +145,9 @@ const QuizSolutionScreen = React.memo(() => {
                 name={currentQuestionBookmarkStatus ? "bookmark" : "bookmark-outline"}
                 size={20}
                 color={
-                  currentQuestion?.tags?.difficulty === 'Easy'
-                    ? '#4CAF50'
-                    : currentQuestion?.tags?.difficulty === 'Medium'
-                      ? '#FFC107'
-                      : currentQuestion?.tags?.difficulty === 'Hard'
-                        ? '#F44336'
-                        : '#888'
+                  currentQuestion?.tags?.difficulty === 'Easy' ? '#4CAF50' :
+                    currentQuestion?.tags?.difficulty === 'Medium' ? '#FFC107' :
+                      currentQuestion?.tags?.difficulty === 'Hard' ? '#F44336' : '#888'
                 }
               />
             </TouchableOpacity>
@@ -208,7 +165,6 @@ const QuizSolutionScreen = React.memo(() => {
               </View>
             )}
           </View>
-
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -231,92 +187,94 @@ const QuizSolutionScreen = React.memo(() => {
             )}
           </View>
 
+          {/* {currentQuestion.type === 'MMCQ' && mmcqStats && (
+            <View style={styles.mmcqSummary}>
+              <Text style={styles.mmcqSummaryText}>
+                You selected {mmcqStats.selected} option(s): {mmcqStats.correct} correct, {mmcqStats.incorrect} incorrect
+              </Text>
+            </View>
+          )} */}
+
           <View style={styles.optionsContainer}>
             {currentQuestion.type === 'Numeric' ? (
               <View style={styles.numericContainer}>
-                {/* Show user's answer only if it's wrong */}
-                {userAnswer && userAnswer !== correctOption?.text && (
+                {userAnswer[0] && userAnswer[0] !== correctOptions[0]?.text && (
                   <View style={[styles.optionButton, styles.optionWrong]}>
                     <View style={styles.optionContent}>
                       <View style={[styles.optionLabelCircle, { backgroundColor: '#F44336' }]}>
                         <Ionicons name="close" size={20} color="#fff" />
                       </View>
-                      <Text style={styles.optionText}>
-                        Your answer: {userAnswer}
-                      </Text>
+                      <Text style={styles.optionText}>Your answer: {userAnswer[0]}</Text>
                     </View>
                   </View>
                 )}
 
-                {/* Correct answer - show with different styling based on attempt status */}
                 <View style={[
                   styles.optionButton,
-                  userAnswer === correctOption?.text ? styles.optionCorrect :
-                    userAnswer ? styles.optionCorrectWithoutTick : styles.optionUnattemptedCorrect
+                  userAnswer[0] === correctOptions[0]?.text ? styles.optionCorrect :
+                    userAnswer[0] ? styles.optionCorrectWithoutTick : styles.optionUnattemptedCorrect
                 ]}>
                   <View style={styles.optionContent}>
                     <View style={[
                       styles.optionLabelCircle,
-                      userAnswer === correctOption?.text ? { backgroundColor: '#3ec170' } :
+                      userAnswer[0] === correctOptions[0]?.text ? { backgroundColor: '#3ec170' } :
                         { backgroundColor: '#3ec17022' }
                     ]}>
-                      {userAnswer === correctOption?.text && (
+                      {userAnswer[0] === correctOptions[0]?.text && (
                         <Ionicons name="checkmark" size={20} color="#fff" />
                       )}
                     </View>
                     <Text style={styles.optionText}>
-                      Correct answer: {correctOption?.text}
+                      Correct answer: {correctOptions[0]?.text}
                     </Text>
                   </View>
                 </View>
               </View>
             ) : (
               currentQuestion.options.map((option: any, idx: number) => {
-                const isCorrectOption = option.isCorrect;
-                const isUserSelected = userAnswer && userAnswer.includes(option.id);
-                const isUserCorrect = isCorrectOption && isUserSelected;
-                const isUserWrong = !isCorrectOption && isUserSelected;
-                const showAsCorrectAnswer = isCorrectOption && (!userAnswer || (userAnswer && !isUserSelected));
+                const isCorrect = option.isCorrect;
+                const isSelected = userAnswer?.includes(option.id);
+                const showAsMissedCorrect = isCorrect && !isSelected && userAnswer;
 
                 return (
                   <View key={option.id} style={[
                     styles.optionButton,
-                    isUserCorrect && styles.optionCorrect,
-                    isUserWrong && styles.optionWrong,
-                    showAsCorrectAnswer && styles.optionCorrectWithoutTick,
-                    !userAnswer && !isCorrectOption && styles.optionUnattempted
+                    isCorrect && isSelected && styles.optionCorrect,
+                    !isCorrect && isSelected && styles.optionWrong,
+                    showAsMissedCorrect && styles.optionCorrectWithoutTick,
+                    !userAnswer && styles.optionUnattempted
                   ]}>
                     <View style={styles.optionContent}>
                       <View style={[
                         styles.optionLabelCircle,
-                        isUserCorrect && { backgroundColor: '#3ec170' },
-                        isUserWrong && { backgroundColor: '#F44336' },
-                        showAsCorrectAnswer && { backgroundColor: '#3ec17022' },
+                        isCorrect && isSelected && { backgroundColor: '#3ec170' },
+                        !isCorrect && isSelected && { backgroundColor: '#F44336' },
+                        showAsMissedCorrect && { backgroundColor: '#3ec17022' },
                       ]}>
-                        {isUserCorrect ? (
+                        {isCorrect && isSelected ? (
                           <Ionicons name="checkmark" size={20} color="#fff" />
-                        ) : isUserWrong ? (
+                        ) : !isCorrect && isSelected ? (
                           <Ionicons name="close" size={20} color="#fff" />
+                        ) : showAsMissedCorrect ? (
+                          <Ionicons name="checkmark" size={20} color="#3ec170" />
                         ) : (
                           <Text style={[
                             styles.optionLabelText,
-                            showAsCorrectAnswer && { color: '#3ec170' }
+                            showAsMissedCorrect && { color: '#3ec170' }
                           ]}>
                             {getOptionLabel(idx)}
                           </Text>
                         )}
                       </View>
-                      {option.text?.includes('$') || option.text?.includes('\\') ? (
+                      {option.imageUrl ? (
+                        <Image
+                          source={{ uri: option.imageUrl }}
+                          style={{ width: 200, height: 100, resizeMode: 'contain' }}
+                        />
+                      ) : option.text?.includes('$') || option.text?.includes('\\') ? (
                         <KatexRendered content={option.text} style={styles.mathView} />
                       ) : (
                         <Text style={styles.optionText}>{option.text}</Text>
-                      )}
-                      {option.imageUrl && (
-                        <Image
-                          source={{ uri: option.imageUrl }}
-                          style={styles.optionImage}
-                          resizeMode="contain"
-                        />
                       )}
                     </View>
                   </View>
@@ -330,7 +288,7 @@ const QuizSolutionScreen = React.memo(() => {
             )}
           </View>
 
-          {currentQuestion.explanation && (
+          {(currentQuestion.explanation || currentQuestion.explanation_image_url) && (
             <View style={styles.explanationContainer}>
               <Text style={styles.explanationTitle}>Explanation</Text>
               <ScrollView
@@ -338,10 +296,19 @@ const QuizSolutionScreen = React.memo(() => {
                 nestedScrollEnabled
                 showsVerticalScrollIndicator
               >
-                {currentQuestion.explanation.includes('$') || currentQuestion.explanation.includes('\\') ? (
-                  <KatexRendered content={currentQuestion.explanation} style={styles.mathView} />
-                ) : (
-                  <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
+                {currentQuestion.explanation_image_url && (
+                  <Image
+                    source={{ uri: currentQuestion.explanation_image_url }}
+                    style={styles.explanationImage}
+                    resizeMode="contain"
+                  />
+                )}
+                {currentQuestion.explanation && (
+                  currentQuestion.explanation.includes('$') || currentQuestion.explanation.includes('\\') ? (
+                    <KatexRendered content={currentQuestion.explanation} style={styles.mathView} />
+                  ) : (
+                    <Text style={styles.explanationText}>{currentQuestion.explanation}</Text>
+                  )
                 )}
               </ScrollView>
             </View>
@@ -355,9 +322,7 @@ const QuizSolutionScreen = React.memo(() => {
           onPress={handlePrev}
           disabled={isFirstQuestion}
         >
-          <Text style={[styles.navButtonText, isFirstQuestion && styles.disabledButtonText]}>
-            PREV
-          </Text>
+          <Text style={[styles.navButtonText, isFirstQuestion && styles.disabledButtonText]}>PREV</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -372,9 +337,7 @@ const QuizSolutionScreen = React.memo(() => {
           onPress={handleNext}
           disabled={isLastQuestion}
         >
-          <Text style={[styles.navButtonText, isLastQuestion && styles.disabledButtonText]}>
-            NEXT
-          </Text>
+          <Text style={[styles.navButtonText, isLastQuestion && styles.disabledButtonText]}>NEXT</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -394,7 +357,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#4F46E5',
-    flexShrink: 1, // Prevents overflow
+    flexShrink: 1,
   },
   rightContainer: {
     flexDirection: 'row',
@@ -417,26 +380,8 @@ const styles = StyleSheet.create({
   questionText: { fontSize: 16, lineHeight: 24, color: '#333', flex: 1, flexWrap: 'wrap' },
   questionImage: { width: '100%', height: 200, marginTop: 12, borderRadius: 4 },
   mathView: { width: '100%' },
-  optionsContainer: {
-    marginBottom: 24,
-  },
-  numericContainer: {
-    gap: 12,
-  },
-  numericAnswerBox: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: '#fff',
-  },
-  neutralAnswer: {  // For correct answer when user was wrong
-    borderColor: '#e0e0e0',
-    backgroundColor: '#f9f9f9',
-  },
-  unattemptedAnswer: {  // For correct answer when not attempted
-    borderColor: '#bdbdbd',
-    backgroundColor: '#f3f4f6',
-  },
+  optionsContainer: { marginBottom: 24 },
+  numericContainer: { gap: 12 },
   optionButton: {
     padding: 16,
     marginBottom: 12,
@@ -475,14 +420,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 4,
   },
-  correctAnswer: {
-    borderColor: '#3ec170',
-    backgroundColor: '#e6f9f0',
-  },
-  wrongAnswer: {
-    borderColor: '#F44336',
-    backgroundColor: '#fde8e8',
-  },
   optionCorrect: {
     borderColor: '#3ec170',
     backgroundColor: '#e6f9f0',
@@ -491,9 +428,9 @@ const styles = StyleSheet.create({
     borderColor: '#F44336',
     backgroundColor: '#fde8e8',
   },
-  optionDefault: {
-    borderColor: '#e5e7eb',
-    backgroundColor: '#fff',
+  optionCorrectWithoutTick: {
+    borderColor: '#3ec170',
+    backgroundColor: '#e6f9f0',
   },
   optionUnattempted: {
     borderColor: '#bdbdbd',
@@ -507,23 +444,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  optionCorrectWithoutTick: {
-    borderColor: '#3ec170',
-    backgroundColor: '#e6f9f0',
-  },
-  optionLabelTextCorrect: {
-    color: '#3ec170',
-    fontWeight: 'bold',
-  },
   unattemptedText: {
     color: '#bdbdbd',
     fontStyle: 'italic',
     fontSize: 14,
   },
-  explanationContainer: { backgroundColor: '#f0f9ff', borderRadius: 8, padding: 16, marginBottom: 16, maxHeight: 220 },
-  explanationScroll: { maxHeight: 180 },
-  explanationTitle: { fontSize: 16, fontWeight: '600', color: '#4F46E5', marginBottom: 8 },
-  explanationText: { fontSize: 14, color: '#444', lineHeight: 22 },
+  mmcqSummary: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4F46E5',
+  },
+  mmcqSummaryText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  explanationContainer: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    maxHeight: 320
+  },
+  explanationScroll: { maxHeight: 220 },
+  explanationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4F46E5',
+    marginBottom: 8
+  },
+  explanationText: {
+    fontSize: 14,
+    color: '#444',
+    lineHeight: 22
+  },
+  explanationImage: {
+    height: 200,
+    width: "100%"
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -532,14 +493,42 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
-  navButton: { paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  prevButton: { borderRightWidth: 1, borderRightColor: '#9CA3AF' },
-  nextButton: { borderLeftWidth: 1, borderLeftColor: '#9CA3AF' },
-  questionsButton: { flex: 1, marginHorizontal: 8, backgroundColor: '#4F46E5', borderRadius: 0 },
-  disabledButton: { backgroundColor: '#ffffff' },
-  disabledButtonText: { color: '#E5E7EB' },
-  navButtonText: { color: '#9CA3AF', fontWeight: '600', fontSize: 16 },
-  navButtonTextQ: { color: '#ffffff', fontWeight: '500', fontSize: 16 },
+  navButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  prevButton: {
+    borderRightWidth: 1,
+    borderRightColor: '#9CA3AF'
+  },
+  nextButton: {
+    borderLeftWidth: 1,
+    borderLeftColor: '#9CA3AF'
+  },
+  questionsButton: {
+    flex: 1,
+    marginHorizontal: 8,
+    backgroundColor: '#4F46E5',
+    borderRadius: 0
+  },
+  disabledButton: {
+    backgroundColor: '#ffffff'
+  },
+  disabledButtonText: {
+    color: '#E5E7EB'
+  },
+  navButtonText: {
+    color: '#9CA3AF',
+    fontWeight: '600',
+    fontSize: 16
+  },
+  navButtonTextQ: {
+    color: '#ffffff',
+    fontWeight: '500',
+    fontSize: 16
+  },
 });
 
 export default QuizSolutionScreen;

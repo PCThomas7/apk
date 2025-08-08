@@ -66,21 +66,24 @@ api.interceptors.response.use(
           await SecureStore.deleteItemAsync('authToken');
           await SecureStore.deleteItemAsync('userDetails');
 
-          Alert.alert('Session Expired', 'Please log in again.');
+          Alert.alert('Session Expired1', 'Please log in again.');
           router.replace('/Auth');
           return Promise.reject(new Error('No refresh token available'));
         }
 
         console.log('Attempting to refresh token...');
         const refreshResponse = await axios.post(
-          'https://dev.professorpcthomas.com/api/auth/refresh',
+          `${Constants.expoConfig.extra.BASEURL}/auth/refresh`,
           { refreshToken },
           { headers: { 'Content-Type': 'application/json' } }
         );
 
-        const { token } = refreshResponse.data;
+        const { token, userDetails } = refreshResponse.data;
         console.log('Token refreshed successfully');
         await SecureStore.setItemAsync('authToken', token);
+        if (userDetails) {
+          await SecureStore.setItemAsync('userDetails', JSON.stringify(userDetails));
+        }
 
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return api(originalRequest); // Retry original request
@@ -90,8 +93,8 @@ api.interceptors.response.use(
         await SecureStore.deleteItemAsync('refreshToken');
         await SecureStore.deleteItemAsync('userDetails');
 
-        Alert.alert('Session Expired', 'Please log in again.');
-         router.replace('/Auth');
+        Alert.alert('Session2 Expired', 'Please log in again.');
+        router.replace('/Auth');
 
         return Promise.reject(refreshError);
       }

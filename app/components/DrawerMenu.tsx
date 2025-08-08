@@ -10,7 +10,9 @@ import {
   Animated,
   Platform,
   StatusBar,
-  I18nManager
+  I18nManager,
+  Pressable,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -23,6 +25,8 @@ import {
 import { useAppDispatch } from '../../redux/hooks';
 import { logout } from '../../redux/slices/authSlice';
 import { EventRegister } from 'react-native-event-listeners';
+import updateService from '@/services/updateService';
+import UpdateBanner from '../components/updateBanner';
 
 
 interface DrawerMenuProps {
@@ -40,6 +44,8 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [version, setVersion] = useState(2);
+  const [updateInfo, setUpdateInfo] = useState<null | { updateUrl: string }>(null);
   const dispatch = useAppDispatch();
 
   const translateX = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -51,13 +57,22 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
       ? StatusBar.currentHeight + 10
       : 30;
 
+  const checkUpdate = async () => {
+    const response = await updateService.update(version);
+    if (response.updateAvailable === true) {
+      setUpdateInfo({ updateUrl: response.updateUrl });
+    }else{
+        setUpdateInfo({ updateUrl: 'noupdate' });
+      }
+  }
+
   const menuItems = [
     { icon: 'bar-chart-outline', title: 'My Performance', onPress: () => router.push('/components/analytics/AnalyticsList') },
     { icon: 'chatbubble-ellipses-outline', title: 'Ask a Doubt', onPress: () => router.push('/components/doubt/doubt') },
     { icon: 'people-outline', title: 'Community', onPress: () => router.push('/components/community/Community') },
     { icon: 'share-social-outline', title: 'Share App', onPress: () => console.log('Share pressed') },
     { icon: 'bookmark-outline', title: 'Bookmarks', onPress: () => router.push('/components/BookMarks/BookMark') },
-    { icon: 'notifications-outline', title: 'Notifications', onPress: () => console.log('Notifications pressed') },
+    { icon: 'cloud-download-outline', title: 'Updates', onPress: () => checkUpdate() },
     { icon: 'person-outline', title: 'Profile', onPress: () => console.log('Profile pressed') },
     { icon: 'shield-checkmark-outline', title: 'Privacy Policy', onPress: () => console.log('Privacy Policy pressed') },
     { icon: 'log-out-outline', title: 'Logout', danger: true, onPress: () => setShowLogoutModal(true) },
@@ -87,7 +102,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
     });
   };
 
- const handleLogoutConfirm = async () => {
+  const handleLogoutConfirm = async () => {
     try {
       setShowLogoutModal(false);
 
@@ -115,10 +130,10 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
             webClientId: '725112630139-rgj27jcug4ggeco8ggujmn415j2ptr39.apps.googleusercontent.com',
           });
           await GoogleSignin.signOut();
-          
+
           // Update Redux state
           dispatch(logout());
-          
+
           // Navigate to AuthScreen using expo-router
           router.replace('/components/auth/AuthScreen');
         } catch (error) {
@@ -199,6 +214,10 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
     );
   };
 
+  const openLink = (url: string) => {
+    Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
+  };
+
   return (
     <>
       <Modal
@@ -263,7 +282,22 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
               {menuItems.map(renderMenuItem)}
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={styles.socialcontainer}>
+              <View style={styles.socialIcons}>
+
+                <Pressable onPress={() => openLink('https://www.facebook.com/profpcthomasclasses')}>
+                  <Ionicons name="logo-facebook" size={28} color="#4267B2" />
+                </Pressable>
+
+                <Pressable onPress={() => openLink('https://www.instagram.com/profpcthomaschaithclasses')}>
+                  <Ionicons name="logo-instagram" size={28} color="#C13584" />
+                </Pressable>
+
+                <Pressable onPress={() => openLink('https://wa.me/919656676695?text=Hi')}>
+                  <Ionicons name="logo-whatsapp" size={28} color="#25D366" />
+                </Pressable>
+              </View>
+
               <Text style={[
                 styles.versionText,
                 { color: isDark ? '#666' : '#999' }
@@ -271,9 +305,19 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({ visible, onClose }) => {
                 v1.28.05.03
               </Text>
             </View>
+
+
           </Animated.View>
         </Animated.View>
       </Modal>
+
+       {updateInfo && (
+        <UpdateBanner
+          updateUrl={updateInfo.updateUrl}
+          onClose={() => setUpdateInfo(null)}
+          duration={10000} // optional auto-dismiss
+        />
+      )}
 
       <LogoutModal
         visible={showLogoutModal}
@@ -356,16 +400,23 @@ const styles = StyleSheet.create({
     height: 8,
     marginVertical: 8,
   },
-  footer: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
   versionText: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: 'center',
   },
+  socialcontainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+    marginHorizontal: 20,
+    paddingBottom:10,
+  },
+  socialIcons: {
+    flexDirection:'row',
+    alignItems: 'center',
+    columnGap:15,
+  }
 });
 
 export default React.memo(DrawerMenu);

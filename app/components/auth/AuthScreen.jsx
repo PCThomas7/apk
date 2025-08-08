@@ -102,7 +102,7 @@ const authStyles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    height: height * 0.25,
+    height: height * 0.27,
     width: '100%',
     backgroundColor: '#fbe4eb',
     justifyContent: 'center',

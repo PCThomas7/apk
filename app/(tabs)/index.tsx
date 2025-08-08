@@ -30,7 +30,7 @@ const HomeScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [version, setVersion] = useState(1);
+  const [version, setVersion] = useState(2);
   const [updateInfo, setUpdateInfo] = useState<null | { updateUrl: string }>(null);
 
   const fetchUpcomingLessons = useCallback(async () => {

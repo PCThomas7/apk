@@ -81,7 +81,7 @@ export default function LoginForm({ onLoginSuccess, onSwitchToSignup }) {
       }
 
       try {
-        const { data: token } = await Notifications.getDevicePushTokenAsync();
+        const { data: token } = await Notifications.getExpoPushTokenAsync();
         return token;
       } catch (e) {
         console.log('Error getting push token:', e);

@@ -65,12 +65,20 @@ const UpdateBanner: React.FC<UpdateBannerProps> = ({ updateUrl, onClose, duratio
     <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
       <View style={styles.contentRow}>
         <Ionicons name="download-outline" size={24} color="#fff" style={styles.icon} />
-        <View style={styles.textBlock}>
-          <Text style={styles.title}>Time to level up</Text>
-          <Text style={styles.subtitle}>
-            A new version of the app is available, update now?
-          </Text>
-        </View>
+        {updateUrl === "noupdate" ? (
+          <View style={styles.textBlock}>
+            <Text style={styles.title}>You're Up to Date</Text>
+            <Text style={styles.subtitle}>No updates available at the moment.</Text>
+          </View>
+        ) : (
+          <View style={styles.textBlock}>
+            <Text style={styles.title}>Time to level up!</Text>
+            <Text style={styles.subtitle}>
+              A new version of the app is available. Would you like to update now?
+            </Text>
+          </View>
+        )}
+
         {onClose && (
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
             <Ionicons name="close" size={22} color="#fff" />
@@ -78,10 +86,14 @@ const UpdateBanner: React.FC<UpdateBannerProps> = ({ updateUrl, onClose, duratio
         )}
       </View>
 
-      <TouchableOpacity style={styles.updateButton} onPress={handleUpdatePress}>
+      {updateUrl === "noupdate" ? (
+        <Text></Text>
+      ) : (
+        <TouchableOpacity style={styles.updateButton} onPress={handleUpdatePress}>
         <Text style={styles.updateButtonText}>UPDATE NOW</Text>
         <Ionicons name="arrow-forward-outline" size={16} color="#fff" style={styles.arrowIcon} />
       </TouchableOpacity>
+      )}
     </Animated.View>
   );
 };
@@ -89,7 +101,7 @@ const UpdateBanner: React.FC<UpdateBannerProps> = ({ updateUrl, onClose, duratio
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: -10,
+    top: -20,
     left: 0,
     right: 0,
     backgroundColor: '#000',

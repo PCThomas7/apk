@@ -119,6 +119,7 @@ const QuizParticipationScreen: React.FC = () => {
 
   const currentSection = currentQuiz.sections[currentQuiz.attempt.currentSectionIndex];
   const currentQuestion = currentSection.questions[currentQuiz.attempt.currentQuestionIndex];
+  // console.log("currentQuestion : ",currentQuestion);
   const selectedOption = currentQuiz.attempt.answers[currentQuestion.id] || null;
   const isMarkedForReview = currentQuiz.attempt.markedForReview[currentQuestion.id] || false;
 
@@ -192,24 +193,31 @@ const QuizParticipationScreen: React.FC = () => {
     }
   };
 
-  const renderOptionContent = (optionText: string) => {
-    if (optionText.startsWith('http')) {
-      return (
-        <Image
-          source={{ uri: optionText }}
-          style={[styles.optionImage, { width: windowWidth - 100, height: 200 }]}
-          resizeMode="contain"
-        />
-      );
-    } else if (optionText.includes('$') || optionText.includes('\\')) {
-      return <KatexRenderer content={optionText} style={styles.mathView} />;
-    }
+const renderOptionContent = (option: {text?: string, imageUrl?: string}) => {
+  // First check if there's an image URL to display
+  if (option.imageUrl) {
     return (
-      <Text style={[styles.optionText, selectedOption === optionText && styles.selectedOptionText]}>
-        {optionText}
+      <Image
+        source={{ uri: option.imageUrl }}
+         style={{ width: 200, height: 100, resizeMode: 'contain' }}
+        resizeMode="contain"
+      />
+    );
+  }
+  // Then check for math content in the text
+  else if (option.text && (option.text.includes('$') || option.text.includes('\\'))) {
+    return <KatexRenderer content={option.text} style={styles.mathView} />;
+  }
+  // Finally, just render the text
+  else if (option.text) {
+    return (
+      <Text style={[styles.optionText, selectedOption === option.text && styles.selectedOptionText]}>
+        {option.text}
       </Text>
     );
-  };
+  }
+  return null; // fallback if neither exists
+};
 
   const handleSubmit = async () => {
     dispatch(submitQuiz()); // Optional, if needed before thunk
@@ -308,6 +316,7 @@ const QuizParticipationScreen: React.FC = () => {
 
       {/* Question Container */}
       <ScrollView style={styles.contentContainer} contentContainerStyle={styles.scrollContent}>
+        
         <View style={styles.questionHeader}>
           <Text style={styles.questionNumber}>
             Question {currentQuiz.attempt.currentQuestionIndex + 1} of {currentSection.questions.length}
@@ -401,7 +410,7 @@ const QuizParticipationScreen: React.FC = () => {
                         )
                       )}
                     </View>
-                    {renderOptionContent(option.text)}
+                    {renderOptionContent(option)}
                   </View>
                 </Pressable>
               );

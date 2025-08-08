@@ -169,7 +169,7 @@ const markLessonasComplete = async (contentIdStr: string) => {
         {/* Footer Section */}
         <Text style={styles.footerText}>
           {lesson?.isScheduled
-            ? "Scheduled quizzes help with long-term knowledge retention."
+            ? "Scheduled lessons help reinforce concepts over time for better retention."
             : lesson?.isLocked
               ? "Premium members score 20% higher on average!"
               : "Tip: Read each question carefully before answering."}

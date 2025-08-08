@@ -22,6 +22,7 @@ interface QuizQuestion {
   markedForReview: boolean;
   imageUrl?: string;
   explanation?: string;
+  explanation_image_url?:string,
   marks: number;
   negativeMarks: number;
   tags: {
@@ -139,6 +140,7 @@ export const fetchQuiz = createAsyncThunk(
           correct_answer: string;
           image_url?: string;
           explanation?: string;
+          explanation_image_url?: string;
           tags?: {
             question_type?: string;
             subject?: string;
@@ -224,6 +226,7 @@ export const fetchQuiz = createAsyncThunk(
               type: questionType,
               imageUrl: question.image_url,
               explanation: question.explanation,
+              explanation_image_url:question.explanation_image_url,
               marks: section.marks_per_question,
               negativeMarks: section.negative_marks,
               tags: {
